@@ -1,6 +1,6 @@
-# Next Generation Sequencing fragment manipulation
+# IntervalFrame for interval manipulation
 
-[![Build Status](https://travis-ci.org/kylessmith/NGSfragments.svg?branch=master)](https://travis-ci.org/kylessmith/NGSfragments) [![PyPI version](https://badge.fury.io/py/NGSfragments.svg)](https://badge.fury.io/py/NGSfragments)
+[![Build Status](https://travis-ci.org/kylessmith/intervalframe.svg?branch=master)](https://travis-ci.org/kylessmith/intervalframe) [![PyPI version](https://badge.fury.io/py/intervalframe.svg)](https://badge.fury.io/py/intervalframe)
 [![Coffee](https://img.shields.io/badge/-buy_me_a%C2%A0coffee-gray?logo=buy-me-a-coffee&color=ff69b4)](https://www.buymeacoffee.com/kylessmith)
 
 This is a Python package for easy and efficient manipulation
@@ -23,15 +23,16 @@ Dependencies can be installed by:
 
 PyPI install, presuming you have all its requirements installed:
 ```
-    pip install NGSfragments
+    NOT AVAILABLE...YET
+	pip install intervalframe
 ```
 
 ## Usage
 
 ```python
-from NGSfragments import fragments
+from intervalframe import IntervalFrame
 import numpy as np
 
 # Create data
-frags = fragments("test_bam.bam", verbose=True)
+iframe = IntervalFrame()
 ```
