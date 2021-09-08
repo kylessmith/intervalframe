@@ -41,11 +41,11 @@ iframe2.df.loc[:,"values"] = values2
 
 #o = iframe1.intersect(6418, 16418, label="a")
 # 1.31 ms ± 7.03 µs per loop (mean ± std. dev. of 7 runs, 1000 loops each)
-#o = iframe1.overlap(iframe2)
-oi = iframe1.index.intersect_from_LabeledIntervalArray(iframe2.index)
-a = iframe1.index[oi[0]]
-df = iframe1.df.iloc[oi[0],:]
-a.construct()
+o = iframe1.overlap(iframe2)
+#oi = iframe1.index.intersect_from_LabeledIntervalArray(iframe2.index)
+#a = iframe1.index[oi[0]]
+#df = iframe1.df.iloc[oi[0],:]
+#a.construct()
 #o = IntervalFrame(a, df=df)
 #%time o = iframe1.overlap(iframe2)
 # CPU times: user 18.9 s, sys: 14.3 s, total: 33.2 s
