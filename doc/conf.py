@@ -16,17 +16,17 @@ from pathlib import Path
 from datetime import datetime
 HERE = Path(__file__).parent
 sys.path[:0] = [str(HERE.parent), str(HERE / 'extensions')]
-import ailist
-#sys.path.append(os.path.abspath('../ailist'))
+import intervalframe
+#sys.path.append(os.path.abspath('../intervalframe'))
 #sys.path.insert(0, os.path.abspath('.'))
 #sys.path.insert(0, os.path.abspath('..'))
 
 
 # -- Project information -----------------------------------------------------
-project = 'ailist'
-author = ailist.__author__
+project = 'intervalframe'
+author = intervalframe.__author__
 copyright = f'{datetime.now():%Y}, {author}.'
-version = ailist.__version__.replace('.dirty', '')
+version = intervalframe.__version__.replace('.dirty', '')
 release = version
 
 
@@ -87,20 +87,45 @@ intersphinx_mapping = dict(
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'sphinx_rtd_theme'
-#html_theme = "pydata_sphinx_theme"
-#html_theme = 'scikit-learn-modern'
+#html_theme = 'sphinx_rtd_theme'
+html_theme = "pydata_sphinx_theme"
+#html_theme = 'scikit_learn_modern'
+#html_theme = "dask_sphinx_theme"
+#html_theme = 'bootstrap'
 
-html_theme_options = dict(navigation_depth=4,
-                          google_analytics_id="UA-170691991-1")
+html_logo = "_static/logo.svg"
+
+html_theme_options = dict(github_url="https://github.com/kylessmith/intervalframe",
+                          navigation_depth=4,
+                          google_analytics_id="UA-170691991-1",
+                          source_link_position= "footer",
+                          bootswatch_theme= "cerulean",
+                          navbar_title= "intervalframe",
+                          navbar_sidebarrel= False,
+                          bootstrap_version= "3",
+                          nosidebar= True,
+                          body_max_width= '100%',
+                          external_links=[{"name":"Other tools",
+                                           "url":"https://www.biosciencestack.com/documentation/"}],
+                          show_prev_next=False,
+                          use_edit_page_button=True,
+                          search_bar_position="navbar",
+                          navbar_links= [
+                            ("API", "api/index"),
+                            ("Benchmark", "benchmarking"),
+                            ("Tutorial", "tutorial"),
+                            ("BioscienceStack", "http://biosciencestack.com", True)
+                          ],)
+
+html_sidebars = {"**": []}
 
 html_context = dict(
     display_github=True,  # Integrate GitHub
     github_user='kylessmith',  # Username
-    github_repo='ailist',  # Repo name
-    github_version='master',  # Version
+    github_repo='intervalframe',  # Repo name
+    github_version='main',  # Version
     conf_py_path='/doc/',  # Path in the checkout to the docs root
-    github_url="https://github.com/kylessmith/ailist",
+    github_url="https://github.com",
 )
 
 # Add any paths that contain custom static files (such as style sheets) here,

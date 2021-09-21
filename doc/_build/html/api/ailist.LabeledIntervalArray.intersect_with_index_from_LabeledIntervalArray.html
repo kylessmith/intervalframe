@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ailist.LabeledIntervalArray.intersect_with_index_from_LabeledIntervalArray &mdash; ailist 1.0.0 documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/typehints.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/custom.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="ailist.LabeledIntervalArray.iter_sorted" href="ailist.LabeledIntervalArray.iter_sorted.html" />
+    <link rel="prev" title="ailist.LabeledIntervalArray.intersect_with_index" href="ailist.LabeledIntervalArray.intersect_with_index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../index.html" class="icon icon-home"> ailist
+          </a>
+              <div class="version">
+                1.0.0
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">The ailist API reference</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="index.html#api">API</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="index.html#basic-class">Basic class</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="ailist.Interval.html">ailist.Interval</a></li>
+<li class="toctree-l4"><a class="reference internal" href="ailist.LabeledInterval.html">ailist.LabeledInterval</a></li>
+<li class="toctree-l4"><a class="reference internal" href="ailist.AIList.html">ailist.AIList</a></li>
+<li class="toctree-l4"><a class="reference internal" href="ailist.IntervalArray.html">ailist.IntervalArray</a></li>
+<li class="toctree-l4 current"><a class="reference internal" href="ailist.LabeledIntervalArray.html">ailist.LabeledIntervalArray</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../tutorial.html">Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../benchmarking.html">Benchmarking</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">ailist</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="index.html">The ailist API reference</a> &raquo;</li>
+          <li><a href="ailist.LabeledIntervalArray.html">ailist.LabeledIntervalArray</a> &raquo;</li>
+      <li>ailist.LabeledIntervalArray.intersect_with_index_from_LabeledIntervalArray</li>
+      <li class="wy-breadcrumbs-aside">
+              <a href="https://github.com/kylessmith/ailist/blob/master/doc/api/ailist.LabeledIntervalArray.intersect_with_index_from_LabeledIntervalArray.rst" class="fa fa-github"> Edit on GitHub</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <div class="section" id="ailist-labeledintervalarray-intersect-with-index-from-labeledintervalarray">
+<h1>ailist.LabeledIntervalArray.intersect_with_index_from_LabeledIntervalArray<a class="headerlink" href="#ailist-labeledintervalarray-intersect-with-index-from-labeledintervalarray" title="Permalink to this headline"></a></h1>
+<dl class="py method">
+<dt class="sig sig-object py" id="ailist.LabeledIntervalArray.intersect_with_index_from_LabeledIntervalArray">
+<span class="sig-prename descclassname"><span class="pre">LabeledIntervalArray.</span></span><span class="sig-name descname"><span class="pre">intersect_with_index_from_LabeledIntervalArray</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">self</span></em>, <em class="sig-param"><span class="pre">LabeledIntervalArray</span> <span class="pre">ail</span></em><span class="sig-paren">)</span><a class="headerlink" href="#ailist.LabeledIntervalArray.intersect_with_index_from_LabeledIntervalArray" title="Permalink to this definition"></a></dt>
+<dd><p>Find interval indices overlapping given ranges</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>ail_query</strong> : <a class="reference internal" href="ailist.IntervalArray.html#ailist.IntervalArray" title="ailist.IntervalArray"><em>IntervalArray</em></a></dt><dd><p>Intervals to query</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>ref_index</strong> (<em>np.ndarray{int}</em>) – Overlapping interval indices from IntervalArray</p></li>
+<li><p><strong>query_index</strong> (<em>np.ndarray{int}</em>) – Overlapping interval indices from query IntervalArray</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<dl class="simple">
+<dt><a class="reference internal" href="ailist.IntervalArray.construct.html#ailist.IntervalArray.construct" title="ailist.IntervalArray.construct"><code class="xref py py-obj docutils literal notranslate"><span class="pre">IntervalArray.construct</span></code></a></dt><dd><p>Construct IntervalArray, required to call IntervalArray.intersect</p>
+</dd>
+<dt><a class="reference internal" href="ailist.IntervalArray.add.html#ailist.IntervalArray.add" title="ailist.IntervalArray.add"><code class="xref py py-obj docutils literal notranslate"><span class="pre">IntervalArray.add</span></code></a></dt><dd><p>Add interval to IntervalArray</p>
+</dd>
+<dt><a class="reference internal" href="ailist.IntervalArray.intersect.html#ailist.IntervalArray.intersect" title="ailist.IntervalArray.intersect"><code class="xref py py-obj docutils literal notranslate"><span class="pre">IntervalArray.intersect</span></code></a></dt><dd><p>Find intervals overlapping given range</p>
+</dd>
+<dt><a class="reference internal" href="ailist.IntervalArray.intersect_from_array.html#ailist.IntervalArray.intersect_from_array" title="ailist.IntervalArray.intersect_from_array"><code class="xref py py-obj docutils literal notranslate"><span class="pre">IntervalArray.intersect_from_array</span></code></a></dt><dd><p>Find interval indices overlapping given range</p>
+</dd>
+</dl>
+</div>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">IntervalArray</span> <span class="kn">import</span> <span class="n">IntervalArray</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ail1</span> <span class="o">=</span> <span class="n">IntervalArray</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ail1</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ail1</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ail1</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">6</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ail1</span>
+<span class="go">IntervalArray</span>
+<span class="go">  range: (1-6)</span>
+<span class="go">   (1-2)</span>
+<span class="go">   (3-4)</span>
+<span class="go">   (2-6)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ail2</span> <span class="o">=</span> <span class="n">IntervalArray</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ail2</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ail2</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">6</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ail2</span>
+<span class="go">IntervalArray</span>
+<span class="go">  range: (1-6)</span>
+<span class="go">    (1-2)</span>
+<span class="go">    (3-6)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">q</span> <span class="o">=</span> <span class="n">ail1</span><span class="o">.</span><span class="n">intersect_from_IntervalArray</span><span class="p">(</span><span class="n">ail2</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">q</span>
+<span class="go">(array([0, 1, 1]), array([0, 2, 1]))</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</div>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="ailist.LabeledIntervalArray.intersect_with_index.html" class="btn btn-neutral float-left" title="ailist.LabeledIntervalArray.intersect_with_index" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="ailist.LabeledIntervalArray.iter_sorted.html" class="btn btn-neutral float-right" title="ailist.LabeledIntervalArray.iter_sorted" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2021, Kyle S. Smith..</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

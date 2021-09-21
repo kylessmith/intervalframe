@@ -1,0 +1,963 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>intervalframe.core.IntervalFrame &mdash; ailist 1.0.0 documentation</title>
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/typehints.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/custom.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../index.html" class="icon icon-home"> ailist
+          </a>
+              <div class="version">
+                1.0.0
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/index.html">The intervalFrame API reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tutorial.html">Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../benchmarking.html">Benchmarking</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">ailist</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+      <li>intervalframe.core.IntervalFrame</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for intervalframe.core.IntervalFrame</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">ailist</span> <span class="kn">import</span> <span class="n">IntervalArray</span><span class="p">,</span> <span class="n">LabeledIntervalArray</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">copy</span> <span class="k">as</span> <span class="nn">cp</span>
+<span class="kn">from</span> <span class="nn">.index.indexers</span> <span class="kn">import</span> <span class="n">iLocator</span><span class="p">,</span> <span class="n">Locator</span>
+<span class="kn">from</span> <span class="nn">tabulate</span> <span class="kn">import</span> <span class="n">tabulate</span>
+<span class="kn">from</span> <span class="nn">bcpseg</span> <span class="kn">import</span> <span class="n">bcpseg</span>
+<span class="kn">import</span> <span class="nn">cbseg</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">Counter</span>
+
+
+<span class="c1">#_mpl_repr</span>
+<div class="viewcode-block" id="IntervalFrame"><a class="viewcode-back" href="../../../api/intervalframe.IntervalFrame.html#intervalframe.IntervalFrame">[docs]</a><span class="k">class</span> <span class="nc">IntervalFrame</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Annotated augmented interval list</span>
+
+<span class="sd">    :class:`~intervalframe.IntervalFrame` stores a intervals</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">intervals</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">df</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">dtypes</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">copy_df</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">copy_intervals</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize IntervalFrame</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">            intervals : AIList</span>
+<span class="sd">                Intervals to be stored</span>
+<span class="sd">            df : pandas.DataFrame</span>
+<span class="sd">                DataFrame to annotate intervals with</span>
+<span class="sd">            labels : array-like</span>
+<span class="sd">                Labels for hierarchical indexing</span>
+<span class="sd">            columns :  array-like</span>
+<span class="sd">                Columns for DataFrame</span>
+<span class="sd">            dtypes : dict</span>
+<span class="sd">                Dtype for DataFrame columns</span>
+<span class="sd">            copy_df : bool</span>
+<span class="sd">                Whether to copy DataFrame</span>
+<span class="sd">            copy_intervals : bool</span>
+<span class="sd">                Whether to copy AIList</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">            None</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># Determine if intervals need to be copied</span>
+        <span class="k">if</span> <span class="n">copy_intervals</span><span class="p">:</span>
+            <span class="n">intervals</span> <span class="o">=</span> <span class="n">intervals</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        
+        <span class="c1"># Initialize Index</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">intervals</span><span class="p">,</span> <span class="n">IntervalArray</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">intervals</span><span class="p">,</span> <span class="n">LabeledIntervalArray</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="n">intervals</span>
+        <span class="k">elif</span> <span class="n">intervals</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">df</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;Unrecognized input for intervals.&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Initialize DataFrame</span>
+        <span class="k">if</span> <span class="n">df</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># Intervals given</span>
+            <span class="k">if</span> <span class="n">intervals</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="c1"># Columns given</span>
+                <span class="k">if</span> <span class="n">columns</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">([],</span> <span class="n">index</span><span class="o">=</span><span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">dtypes</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">([],</span> <span class="n">index</span><span class="o">=</span><span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="n">columns</span><span class="o">=</span><span class="n">columns</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">([],</span> <span class="n">index</span><span class="o">=</span><span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="n">columns</span><span class="o">=</span><span class="n">columns</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">dtypes</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># Columns given</span>
+                <span class="k">if</span> <span class="n">columns</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">([],</span> <span class="n">index</span><span class="o">=</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">index</span><span class="p">)))</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">dtypes</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">([],</span> <span class="n">index</span><span class="o">=</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">index</span><span class="p">)),</span> <span class="n">columns</span><span class="o">=</span><span class="n">columns</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">([],</span> <span class="n">index</span><span class="o">=</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">index</span><span class="p">)),</span> <span class="n">columns</span><span class="o">=</span><span class="n">columns</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">dtypes</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">copy_df</span><span class="p">:</span>
+                <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">deep</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+                
+        <span class="c1"># Set df</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">df</span> <span class="o">=</span> <span class="n">df</span>
+
+        <span class="c1"># Make sure index is frozen</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">index</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">freeze</span><span class="p">()</span>
+
+
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        IntervalFrame representation</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># Initialized string</span>
+        <span class="n">repr_string</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+
+        <span class="c1"># If nothing</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">index</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">repr_string</span> <span class="o">+=</span> <span class="s2">&quot;None</span><span class="se">\n</span><span class="s2">&quot;</span>
+
+        <span class="c1"># If no columns present</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">repr_string</span> <span class="o">+=</span> <span class="nb">repr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
+            <span class="n">repr_string</span> <span class="o">+=</span> <span class="nb">repr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="p">)</span>
+
+        <span class="c1"># If columns present</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Determine dimensions</span>
+            <span class="n">n_rows</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="mi">5</span><span class="p">)</span>
+            <span class="n">n_cols</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="mi">5</span><span class="p">)</span>
+            
+            <span class="c1"># Initialize values</span>
+            <span class="n">repr_list</span> <span class="o">=</span> <span class="p">[[]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_rows</span><span class="o">+</span><span class="mi">1</span><span class="p">)]</span>
+            
+            <span class="c1"># Determine column names</span>
+            <span class="n">repr_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;interval&quot;</span><span class="p">]</span>
+            <span class="n">repr_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">values</span><span class="p">[:</span><span class="n">n_cols</span><span class="p">])))</span>
+            
+            <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span> <span class="c1"># track rows</span>
+            <span class="k">for</span> <span class="n">interval</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">index</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">i</span> <span class="o">&gt;=</span> <span class="n">n_rows</span><span class="p">:</span>
+                    <span class="k">break</span>
+                <span class="c1">#repr_list[i+1].append(repr(interval).split(&quot;,&quot;)[0] + &quot;)&quot;)</span>
+                <span class="n">repr_list</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">repr</span><span class="p">(</span><span class="n">interval</span><span class="p">))</span>
+                <span class="n">repr_list</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="o">+=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">i</span><span class="p">,:</span><span class="n">n_cols</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">)))</span>
+                <span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span>
+            
+            <span class="c1"># Create tabulate table</span>
+            <span class="n">repr_string</span> <span class="o">=</span> <span class="n">tabulate</span><span class="p">(</span><span class="n">repr_list</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="s2">&quot;firstrow&quot;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">repr_string</span>
+
+    
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">shape</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="o">.</span><span class="n">shape</span>
+
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">iloc</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># If index is None</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">index</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="k">return</span> <span class="n">iLocator</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+    
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">loc</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># If index is None</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">index</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="k">return</span> <span class="n">Locator</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        
+    
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">values</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="o">.</span><span class="n">values</span>
+
+    
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">columns</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="o">.</span><span class="n">columns</span>
+
+    
+<div class="viewcode-block" id="IntervalFrame.from_array"><a class="viewcode-back" href="../../../api/intervalframe.IntervalFrame.from_array.html#intervalframe.IntervalFrame.from_array">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">from_array</span><span class="p">(</span><span class="n">starts</span><span class="p">,</span> <span class="n">ends</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># Add intervals</span>
+        <span class="k">if</span> <span class="n">labels</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">index</span> <span class="o">=</span> <span class="n">IntervalArray</span><span class="p">()</span>
+            <span class="n">index</span><span class="o">.</span><span class="n">from_array</span><span class="p">(</span><span class="n">starts</span><span class="p">,</span> <span class="n">ends</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">index</span> <span class="o">=</span> <span class="n">LabeledIntervalArray</span><span class="p">()</span>
+            <span class="n">index</span><span class="o">.</span><span class="n">from_array</span><span class="p">(</span><span class="n">starts</span><span class="p">,</span> <span class="n">ends</span><span class="p">,</span> <span class="n">labels</span><span class="p">)</span>
+            
+        <span class="c1"># Create IntervalFrame</span>
+        <span class="n">iframe</span> <span class="o">=</span> <span class="n">IntervalFrame</span><span class="p">(</span><span class="n">index</span><span class="p">)</span>
+        
+        <span class="k">return</span> <span class="n">iframe</span></div>
+                
+                
+<div class="viewcode-block" id="IntervalFrame.starts"><a class="viewcode-back" href="../../../api/intervalframe.IntervalFrame.starts.html#intervalframe.IntervalFrame.starts">[docs]</a>    <span class="k">def</span> <span class="nf">starts</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># If index is None</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">index</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        
+        <span class="c1"># Extract starts in intervals</span>
+        <span class="n">starts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">extract_starts</span><span class="p">()</span>
+        
+        <span class="k">return</span> <span class="n">starts</span></div>
+        
+    
+<div class="viewcode-block" id="IntervalFrame.ends"><a class="viewcode-back" href="../../../api/intervalframe.IntervalFrame.ends.html#intervalframe.IntervalFrame.ends">[docs]</a>    <span class="k">def</span> <span class="nf">ends</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># If index is None</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">index</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        
+        <span class="c1"># Extract ends in intervals</span>
+        <span class="n">ends</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">extract_ends</span><span class="p">()</span>
+        
+        <span class="k">return</span> <span class="n">ends</span></div>
+
+
+<div class="viewcode-block" id="IntervalFrame.concat"><a class="viewcode-back" href="../../../api/intervalframe.IntervalFrame.concat.html#intervalframe.IntervalFrame.concat">[docs]</a>    <span class="k">def</span> <span class="nf">concat</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">iframe_iter</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Append IntervalFrame to current IntervalFrame</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">            ilist : IntervalFrame</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">            None</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># Iterate over iframes</span>
+        <span class="n">concat_iframe</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">concat_iframe</span><span class="o">.</span><span class="n">index</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">concat_iframe</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">unfreeze</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">iframe</span> <span class="ow">in</span> <span class="n">iframe_iter</span><span class="p">:</span>
+            <span class="n">concat_iframe</span><span class="o">.</span><span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">concat_iframe</span><span class="o">.</span><span class="n">df</span><span class="p">,</span> <span class="n">iframe</span><span class="o">.</span><span class="n">df</span><span class="p">],</span> <span class="n">ignore_index</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">join</span><span class="o">=</span><span class="s2">&quot;inner&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">concat_iframe</span><span class="o">.</span><span class="n">index</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">concat_iframe</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="n">iframe</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">concat_iframe</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">iframe</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
+        <span class="n">concat_iframe</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">construct</span><span class="p">()</span>
+        <span class="n">concat_iframe</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">freeze</span><span class="p">()</span>
+
+        <span class="c1"># Reset index</span>
+        <span class="n">concat_iframe</span><span class="o">.</span><span class="n">df</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="n">concat_iframe</span><span class="o">.</span><span class="n">df</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
+        <span class="k">return</span> <span class="n">concat_iframe</span></div>
+
+
+<div class="viewcode-block" id="IntervalFrame.intersect"><a class="viewcode-back" href="../../../api/intervalframe.IntervalFrame.intersect.html#intervalframe.IntervalFrame.intersect">[docs]</a>    <span class="k">def</span> <span class="nf">intersect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Find intersecting intervals</span>
+
+<span class="sd">        Paramters</span>
+<span class="sd">        ---------</span>
+<span class="sd">            start : int</span>
+<span class="sd">                Starting position</span>
+<span class="sd">            end : int</span>
+<span class="sd">                Ending position</span>
+<span class="sd">            label : str or list</span>
+<span class="sd">                Labels to intersect with [default: None]</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">            overlaps : IntervalFrame</span>
+<span class="sd">                Overlapping intervals</span>
+<span class="sd">            </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># If index is None</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">index</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s2">&quot;LabeledIntervalArray is empty.&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Intersect</span>
+        <span class="k">if</span> <span class="n">label</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">overlaps</span><span class="p">,</span> <span class="n">overlap_index</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">intersect_with_index</span><span class="p">(</span><span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">overlaps</span><span class="p">,</span> <span class="n">overlap_index</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">intersect_with_index</span><span class="p">(</span><span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">label</span><span class="p">))</span>
+            
+        <span class="c1"># Create df</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="o">.</span><span class="n">values</span><span class="p">[</span><span class="n">overlap_index</span><span class="p">,:],</span>
+                            <span class="n">columns</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">values</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="o">.</span><span class="n">dtypes</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(),</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">([],</span> <span class="n">index</span><span class="o">=</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">overlaps</span><span class="p">)))</span>
+
+        <span class="c1"># Create IntervalFrame</span>
+        <span class="n">overlaps</span> <span class="o">=</span> <span class="n">IntervalFrame</span><span class="p">(</span><span class="n">overlaps</span><span class="p">,</span> <span class="n">df</span><span class="p">,</span> <span class="n">copy_intervals</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">copy_df</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">overlaps</span></div>
+
+
+<div class="viewcode-block" id="IntervalFrame.subtract"><a class="viewcode-back" href="../../../api/intervalframe.IntervalFrame.subtract.html#intervalframe.IntervalFrame.subtract">[docs]</a>    <span class="k">def</span> <span class="nf">subtract</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">iframe</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Subtract intersecting regions for IntervalFrame</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">            iframe : IntervalFrame</span>
+<span class="sd">                Intervals to remove</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">            subtracted_frame : IntervalFrame</span>
+<span class="sd">                Intervals with removed regions</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># If index is None</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">index</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s2">&quot;LabeledIntervalArray is empty.&quot;</span><span class="p">)</span>
+
+        <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="IntervalFrame.difference"><a class="viewcode-back" href="../../../api/intervalframe.IntervalFrame.difference.html#intervalframe.IntervalFrame.difference">[docs]</a>    <span class="k">def</span> <span class="nf">difference</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">iframe</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Remove any overlapping intervals</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">            iframe : IntervalFrame</span>
+<span class="sd">                Intervals to remove</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">            diff_frame : IntervalFrame</span>
+<span class="sd">                Intervals that do not overlap</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># If index is None</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">index</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s2">&quot;LabeledIntervalArray is empty.&quot;</span><span class="p">)</span>
+
+        <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="IntervalFrame.nhits"><a class="viewcode-back" href="../../../api/intervalframe.IntervalFrame.nhits.html#intervalframe.IntervalFrame.nhits">[docs]</a>    <span class="k">def</span> <span class="nf">nhits</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Find number of intersecting intervals</span>
+
+<span class="sd">        Paramters</span>
+<span class="sd">        ---------</span>
+<span class="sd">            start : int</span>
+<span class="sd">                Starting position</span>
+<span class="sd">            end : int</span>
+<span class="sd">                Ending position</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">            n : int</span>
+<span class="sd">                Number of overlapping intervals</span>
+<span class="sd">            </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># If index is None</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">index</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s2">&quot;LabeledIntervalArray is empty.&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">label</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">nhits</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">nhits</span><span class="p">(</span><span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">nhits</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">nhits</span><span class="p">(</span><span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">,</span> <span class="n">label</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">nhits</span></div>
+
+
+<div class="viewcode-block" id="IntervalFrame.nhits_from_array"><a class="viewcode-back" href="../../../api/intervalframe.IntervalFrame.nhits_from_array.html#intervalframe.IntervalFrame.nhits_from_array">[docs]</a>    <span class="k">def</span> <span class="nf">nhits_from_array</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">starts</span><span class="p">,</span> <span class="n">ends</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Find number of intersecting intervals</span>
+
+<span class="sd">        Paramters</span>
+<span class="sd">        ---------</span>
+<span class="sd">            start : numpy.ndarray</span>
+<span class="sd">                Starting position</span>
+<span class="sd">            end : numpoy.ndarray</span>
+<span class="sd">                Ending position</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">            n : numpy.ndarray</span>
+<span class="sd">                Number of overlapping intervals</span>
+<span class="sd">            </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># If index is None</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">index</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s2">&quot;LabeledIntervalArray is empty.&quot;</span><span class="p">)</span>
+
+        <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="IntervalFrame.coverage"><a class="viewcode-back" href="../../../api/intervalframe.IntervalFrame.coverage.html#intervalframe.IntervalFrame.coverage">[docs]</a>    <span class="k">def</span> <span class="nf">coverage</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Find number of intervals overlapping every</span>
+<span class="sd">        position in the IntervalFrame</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">            None</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">            pandas.Series{double}</span>
+<span class="sd">                Position on index and coverage as values</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># If index is None</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">index</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s2">&quot;LabeledIntervalArray is empty.&quot;</span><span class="p">)</span>
+
+        <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="IntervalFrame.bin_coverage"><a class="viewcode-back" href="../../../api/intervalframe.IntervalFrame.bin_coverage.html#intervalframe.IntervalFrame.bin_coverage">[docs]</a>    <span class="k">def</span> <span class="nf">bin_coverage</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bin_size</span><span class="o">=</span><span class="mi">100000</span><span class="p">,</span> <span class="n">min_length</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">max_length</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Find sum of coverage within binned</span>
+<span class="sd">        positions</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">            bin_size : int</span>
+<span class="sd">                Size of the bin to use</span>
+<span class="sd">            min_length : int</span>
+<span class="sd">                Minimum length of intervals to include [default = None]</span>
+<span class="sd">            max_length : int</span>
+<span class="sd">                Maximum length of intervals to include [default = None]</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">            cov_iframe : IntervalFrame</span>
+<span class="sd">                Positions of coverage values</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># If index is None</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">index</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s2">&quot;LabeledIntervalArray is empty.&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Determine nhits</span>
+        <span class="c1">#ailist_cov = self.intervals.bin_coverage(bin_size=bin_size, min_length=min_length, max_length=max_length)</span>
+
+        <span class="c1"># Create AIList from pd.Series index</span>
+        <span class="c1">#positions = AIList()</span>
+        <span class="c1">#positions.from_array(ailist_cov.index.values,</span>
+                            <span class="c1">#ailist_cov.index.values + bin_size,</span>
+                            <span class="c1">#np.arange(len(ailist_cov)),</span>
+                            <span class="c1">#ailist_cov.values)</span>
+
+        <span class="c1"># Construct IntervalFrame</span>
+        <span class="c1">#cov_iframe = IntervalFrame(intervals=positions, df=ailist_cov.to_frame())</span>
+
+        <span class="c1">#return cov_iframe</span>
+        <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="IntervalFrame.bin_nhits"><a class="viewcode-back" href="../../../api/intervalframe.IntervalFrame.bin_nhits.html#intervalframe.IntervalFrame.bin_nhits">[docs]</a>    <span class="k">def</span> <span class="nf">bin_nhits</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bin_size</span><span class="o">=</span><span class="mi">100000</span><span class="p">,</span> <span class="n">min_length</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">max_length</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Find number of intervals overlapping binned</span>
+<span class="sd">        positions</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">            bin_size : int</span>
+<span class="sd">                Size of the bin to use</span>
+<span class="sd">            min_length : int</span>
+<span class="sd">                Minimum length of intervals to include [default = None]</span>
+<span class="sd">            max_length : int</span>
+<span class="sd">                Maximum length of intervals to include [default = None]</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">            nhits_iframe : IntervalFrame</span>
+<span class="sd">                Position of nhits values</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># If index is None</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">index</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s2">&quot;LabeledIntervalArray is empty.&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Determine nhits</span>
+        <span class="n">nhits_bins</span><span class="p">,</span> <span class="n">nhits_index</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">bin_nhits</span><span class="p">(</span><span class="n">bin_size</span><span class="p">,</span> <span class="n">min_length</span><span class="p">,</span> <span class="n">max_length</span><span class="p">)</span>
+
+        <span class="c1"># Construct IntervalFrame</span>
+        <span class="n">nhits_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">nhits_index</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">nhits_index</span><span class="p">)),</span> <span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;nhits&quot;</span><span class="p">])</span>
+        <span class="n">nhits_iframe</span> <span class="o">=</span> <span class="n">IntervalFrame</span><span class="p">(</span><span class="n">nhits_bins</span><span class="p">,</span> <span class="n">nhits_df</span><span class="p">,</span> <span class="n">copy_intervals</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                     <span class="n">copy_df</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">nhits_iframe</span></div>
+    
+
+<div class="viewcode-block" id="IntervalFrame.annotate"><a class="viewcode-back" href="../../../api/intervalframe.IntervalFrame.annotate.html#intervalframe.IntervalFrame.annotate">[docs]</a>    <span class="k">def</span> <span class="nf">annotate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">iframe</span><span class="p">,</span> <span class="n">column</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;mean&quot;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Annotate values in one IntervalFrame with another</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">            iframe : IntervalFrame</span>
+<span class="sd">                Intervals used to annotate</span>
+<span class="sd">            columns : str</span>
+<span class="sd">                Name of the column to use</span>
+<span class="sd">            method : str</span>
+<span class="sd">                How to annotate (&#39;mean&#39;,&#39;std&#39;,&#39;median&#39;,&#39;label&#39;)</span>
+<span class="sd">        </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">            None</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># If index is None</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">index</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s2">&quot;LabeledIntervalArray is empty.&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Find overlaps</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">iframe</span><span class="o">.</span><span class="n">index</span><span class="p">,</span> <span class="n">LabeledIntervalArray</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">index</span><span class="p">,</span> <span class="n">LabeledIntervalArray</span><span class="p">):</span>
+            <span class="n">query_index</span><span class="p">,</span> <span class="n">ref_index</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">intersect_from_LabeledIntervalArray</span><span class="p">(</span><span class="n">iframe</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">iframe</span><span class="o">.</span><span class="n">index</span><span class="p">,</span> <span class="n">IntervalArray</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">index</span><span class="p">,</span> <span class="n">IntervalArray</span><span class="p">):</span>
+            <span class="n">query_index</span><span class="p">,</span> <span class="n">ref_index</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">intersect_from_IntervalArray</span><span class="p">(</span><span class="n">iframe</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;IntervalFrames must have same type of index.&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Set function</span>
+        <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;mean&quot;</span><span class="p">:</span>
+            <span class="n">func</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span>
+        <span class="k">elif</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;median&quot;</span><span class="p">:</span>
+            <span class="n">func</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">median</span>
+        <span class="k">elif</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;std&quot;</span><span class="p">:</span>
+            <span class="n">func</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">std</span>
+        <span class="k">elif</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;var&quot;</span><span class="p">:</span>
+            <span class="n">func</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">var</span>
+
+        <span class="c1"># Calculate value</span>
+        <span class="k">if</span> <span class="n">method</span> <span class="o">!=</span> <span class="s2">&quot;label&quot;</span><span class="p">:</span>
+            <span class="n">values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="c1"># Iterate over overlaps</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">pd</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">ref_index</span><span class="p">):</span>
+                <span class="n">values</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">func</span><span class="p">(</span><span class="n">iframe</span><span class="o">.</span><span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">query_index</span><span class="p">[</span><span class="n">ref_index</span> <span class="o">==</span> <span class="n">i</span><span class="p">],</span>
+                                               <span class="n">column</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
+
+        <span class="k">elif</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;label&quot;</span><span class="p">:</span>
+            <span class="n">values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s2">&quot;S10&quot;</span><span class="p">)</span>
+            <span class="c1"># Iterate over overlaps</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">pd</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">ref_index</span><span class="p">):</span>
+                <span class="n">values</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">Counter</span><span class="p">(</span><span class="n">iframe</span><span class="o">.</span><span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">query_index</span><span class="p">[</span><span class="n">ref_index</span> <span class="o">==</span> <span class="n">i</span><span class="p">],</span>
+                                                  <span class="n">column</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">)</span><span class="o">.</span><span class="n">most_common</span><span class="p">(</span><span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="c1"># Append column to df</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="p">[</span><span class="n">method</span><span class="p">]</span> <span class="o">=</span> <span class="n">values</span></div>
+
+
+<div class="viewcode-block" id="IntervalFrame.overlap"><a class="viewcode-back" href="../../../api/intervalframe.IntervalFrame.overlap.html#intervalframe.IntervalFrame.overlap">[docs]</a>    <span class="k">def</span> <span class="nf">overlap</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">iframe</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="s2">&quot;overlap&quot;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Find overlaps in one IntervalFrame with another</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">            iframe : IntervalFrame</span>
+<span class="sd">                Intervals used to annotate</span>
+<span class="sd">            key : str</span>
+<span class="sd">                Name of the column to use in resulting IntervalFrame</span>
+<span class="sd">        </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">            results_iframe : IntervalFrame</span>
+<span class="sd">                Intervals with column indicating index of overlap</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># If index is None</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">index</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s2">&quot;LabeledIntervalArray is empty.&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Find overlaps</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">iframe</span><span class="o">.</span><span class="n">index</span><span class="p">,</span> <span class="n">LabeledIntervalArray</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">index</span><span class="p">,</span> <span class="n">LabeledIntervalArray</span><span class="p">):</span>
+            <span class="n">query_index</span><span class="p">,</span> <span class="n">ref_index</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">intersect_from_LabeledIntervalArray</span><span class="p">(</span><span class="n">iframe</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">iframe</span><span class="o">.</span><span class="n">index</span><span class="p">,</span> <span class="n">IntervalArray</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">index</span><span class="p">,</span> <span class="n">IntervalArray</span><span class="p">):</span>
+            <span class="n">query_index</span><span class="p">,</span> <span class="n">ref_index</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">intersect_from_IntervalArray</span><span class="p">(</span><span class="n">iframe</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;IntervalFrames must have same type of index.&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Index iframes</span>
+        <span class="n">results_iframe</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">ref_index</span><span class="p">,:]</span>
+        <span class="n">results_iframe</span><span class="o">.</span><span class="n">df</span><span class="p">[</span><span class="s2">&quot;overlap&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">query_index</span>
+
+        <span class="c1">#Create intervals</span>
+        <span class="c1">#results_intervals = self.index[ref_index]</span>
+
+        <span class="c1"># Create df</span>
+        <span class="c1">#if self.df.shape[1] &gt; 0:</span>
+            <span class="c1">#df = pd.DataFrame(self.df.values[ref_index,:],</span>
+                              <span class="c1">#columns=self.df.columns.values).astype(self.df.dtypes.to_dict(), copy=False)</span>
+            <span class="c1">#df = self.df.iloc[ref_index,:].reset_index(drop=True, inplace=True)</span>
+        <span class="c1">#else:</span>
+            <span class="c1">#df = pd.DataFrame([], index=range(len(results_intervals)))</span>
+
+        <span class="c1"># Create IntervalFrame</span>
+        <span class="c1">#results_iframe = IntervalFrame(results_intervals, df, copy_intervals=False, copy_df=False)</span>
+        <span class="c1">#results_iframe.df[&quot;overlap&quot;] = query_index</span>
+
+        <span class="k">return</span> <span class="n">results_iframe</span></div>
+
+
+<div class="viewcode-block" id="IntervalFrame.merge"><a class="viewcode-back" href="../../../api/intervalframe.IntervalFrame.merge.html#intervalframe.IntervalFrame.merge">[docs]</a>    <span class="k">def</span> <span class="nf">merge</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">gap</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Annotate values in one IntervalFrame with another</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">            gap : int</span>
+<span class="sd">                Allowed gap between intervals [default: 0]</span>
+<span class="sd">        </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">            merged_iframe : IntervalFrame</span>
+<span class="sd">                Merged intervals</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># If index is None</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">index</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s2">&quot;LabeledIntervalArray is empty.&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Merge intervals</span>
+        <span class="n">merged_index</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">gap</span><span class="o">=</span><span class="n">gap</span><span class="p">)</span>
+        
+        <span class="c1"># Create IntervalFrame</span>
+        <span class="n">merged_iframe</span> <span class="o">=</span> <span class="n">IntervalFrame</span><span class="p">(</span><span class="n">merged_index</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">merged_iframe</span></div>
+
+    
+<div class="viewcode-block" id="IntervalFrame.segment"><a class="viewcode-back" href="../../../api/intervalframe.IntervalFrame.segment.html#intervalframe.IntervalFrame.segment">[docs]</a>    <span class="k">def</span> <span class="nf">segment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">column</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;bcp_online&quot;</span><span class="p">,</span> <span class="n">cutoff</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">hazard</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">shuffles</span><span class="o">=</span><span class="mi">5000</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="mf">0.00005</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Annotate values in one IntervalFrame with another</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">            iframe : IntervalFrame</span>
+<span class="sd">                Intervals used to annotate</span>
+<span class="sd">            column : str</span>
+<span class="sd">                Name of the column to use</span>
+<span class="sd">        </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">            segment_iframe : IntervalFrame</span>
+<span class="sd">                Segmented Intervals</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># If index is None</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">index</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s2">&quot;LabeledIntervalArray is empty.&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Segment intervals for IntervalArray</span>
+        <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;bcp_online&quot;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">index</span><span class="p">,</span> <span class="n">IntervalArray</span><span class="p">):</span>
+                <span class="n">segment_intervals</span> <span class="o">=</span> <span class="n">bcpseg</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="p">[</span><span class="n">column</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">cutoff</span><span class="o">=</span><span class="n">cutoff</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;online&quot;</span><span class="p">,</span> <span class="n">hazard</span><span class="o">=</span><span class="n">hazard</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">segment_intervals</span> <span class="o">=</span> <span class="n">bcpseg</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="p">[</span><span class="n">column</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">extract_labels</span><span class="p">(),</span> <span class="n">cutoff</span><span class="o">=</span><span class="n">cutoff</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;online&quot;</span><span class="p">,</span> <span class="n">hazard</span><span class="o">=</span><span class="n">hazard</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;bcp_online_both&quot;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">index</span><span class="p">,</span> <span class="n">IntervalArray</span><span class="p">):</span>
+                <span class="n">segment_intervals</span> <span class="o">=</span> <span class="n">bcpseg</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="p">[</span><span class="n">column</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">cutoff</span><span class="o">=</span><span class="n">cutoff</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;online_both&quot;</span><span class="p">,</span> <span class="n">hazard</span><span class="o">=</span><span class="n">hazard</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">segment_intervals</span> <span class="o">=</span> <span class="n">bcpseg</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="p">[</span><span class="n">column</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">extract_labels</span><span class="p">(),</span> <span class="n">cutoff</span><span class="o">=</span><span class="n">cutoff</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;online_both&quot;</span><span class="p">,</span> <span class="n">hazard</span><span class="o">=</span><span class="n">hazard</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;bcp_offline&quot;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">index</span><span class="p">,</span> <span class="n">IntervalArray</span><span class="p">):</span>
+                <span class="n">segment_intervals</span> <span class="o">=</span> <span class="n">bcpseg</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="p">[</span><span class="n">column</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">cutoff</span><span class="o">=</span><span class="n">cutoff</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;offline&quot;</span><span class="p">,</span> <span class="n">hazard</span><span class="o">=</span><span class="n">hazard</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">segment_intervals</span> <span class="o">=</span> <span class="n">bcpseg</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="p">[</span><span class="n">column</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">extract_labels</span><span class="p">(),</span> <span class="n">cutoff</span><span class="o">=</span><span class="n">cutoff</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;offline&quot;</span><span class="p">,</span> <span class="n">hazard</span><span class="o">=</span><span class="n">hazard</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;cbs&quot;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">index</span><span class="p">,</span> <span class="n">IntervalArray</span><span class="p">):</span>
+                <span class="n">segment_intervals</span> <span class="o">=</span> <span class="n">cbseg</span><span class="o">.</span><span class="n">segment</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="p">[</span><span class="n">column</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">shuffles</span><span class="o">=</span><span class="n">shuffles</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="n">p</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">segment_intervals</span> <span class="o">=</span> <span class="n">cbseg</span><span class="o">.</span><span class="n">segment</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="p">[</span><span class="n">column</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">extract_labels</span><span class="p">(),</span> <span class="n">shuffles</span><span class="o">=</span><span class="n">shuffles</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="n">p</span><span class="p">)</span>
+            <span class="n">segment_intervals</span> <span class="o">=</span> <span class="n">cbseg</span><span class="o">.</span><span class="n">validate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="p">[</span><span class="n">column</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">segment_intervals</span><span class="p">,</span> <span class="n">shuffles</span><span class="o">=</span><span class="n">shuffles</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="n">p</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">NameError</span><span class="p">(</span><span class="s2">&quot;method input not recognized.&quot;</span><span class="p">)</span>
+
+        <span class="c1">#Re-index segments</span>
+        <span class="c1">#print(segment_intervals)</span>
+        <span class="n">segment_intervals</span><span class="o">.</span><span class="n">index_with_aiarray</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
+
+        <span class="c1"># Create IntervalFrame</span>
+        <span class="n">segment_iframe</span> <span class="o">=</span> <span class="n">IntervalFrame</span><span class="p">(</span><span class="n">segment_intervals</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">segment_iframe</span></div>
+        
+        
+<div class="viewcode-block" id="IntervalFrame.downsample"><a class="viewcode-back" href="../../../api/intervalframe.IntervalFrame.downsample.html#intervalframe.IntervalFrame.downsample">[docs]</a>    <span class="k">def</span> <span class="nf">downsample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">proportion</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Randomly downsample intervals</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">            proportion : float</span>
+<span class="sd">                Proportion of intervals to keep</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">            filtered_iframe : IntervalFrame</span>
+<span class="sd">                Downsampled values</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># If index is None</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">index</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s2">&quot;LabeledIntervalArray is empty.&quot;</span><span class="p">)</span>
+        
+        <span class="c1"># Downsample</span>
+        <span class="n">filtered_intervals</span><span class="p">,</span> <span class="n">filtered_index</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">downsample_with_index</span><span class="p">(</span><span class="n">proportion</span><span class="p">)</span>
+        
+        <span class="c1"># Create df</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="o">.</span><span class="n">values</span><span class="p">[</span><span class="n">filtered_index</span><span class="p">,:],</span>
+                            <span class="n">columns</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">values</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="o">.</span><span class="n">dtypes</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(),</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">([],</span> <span class="n">index</span><span class="o">=</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">filtered_intervals</span><span class="p">)))</span>
+
+        <span class="c1"># Create IntervalFrame</span>
+        <span class="n">filtered_iframe</span> <span class="o">=</span> <span class="n">IntervalFrame</span><span class="p">(</span><span class="n">filtered_intervals</span><span class="p">,</span> <span class="n">df</span><span class="p">,</span> <span class="n">copy_intervals</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">copy_df</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            
+        <span class="k">return</span> <span class="n">filtered_iframe</span></div>
+        
+        
+<div class="viewcode-block" id="IntervalFrame.length_dist"><a class="viewcode-back" href="../../../api/intervalframe.IntervalFrame.length_dist.html#intervalframe.IntervalFrame.length_dist">[docs]</a>    <span class="k">def</span> <span class="nf">length_dist</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Calculate length distribution of intervals</span>
+<span class="sd">        </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">            None</span>
+<span class="sd">        </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">            length_distribution : numpy.ndarray</span>
+<span class="sd">                Length distribution</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># If index is None</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">index</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s2">&quot;LabeledIntervalArray is empty.&quot;</span><span class="p">)</span>
+        
+        <span class="c1"># Calculate length distribution</span>
+        <span class="n">length_distribution</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">length_dist</span><span class="p">()</span>
+        
+        <span class="k">return</span> <span class="n">length_distribution</span></div>
+        
+        
+<div class="viewcode-block" id="IntervalFrame.wps"><a class="viewcode-back" href="../../../api/intervalframe.IntervalFrame.wps.html#intervalframe.IntervalFrame.wps">[docs]</a>    <span class="k">def</span> <span class="nf">wps</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">protection</span><span class="o">=</span><span class="mi">60</span><span class="p">,</span> <span class="n">min_length</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">max_length</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Calculate Window Protection Score for each position in AIList range</span>
+<span class="sd">        </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">            protection : int</span>
+<span class="sd">                Protection window to use</span>
+<span class="sd">            min_length : int</span>
+<span class="sd">                Minimum length of intervals to include [default = None]</span>
+<span class="sd">            max_length : int</span>
+<span class="sd">                Maximum length of intervals to include [default = None]</span>
+<span class="sd">            label : str</span>
+<span class="sd">                Label for hierarchical indexing</span>
+<span class="sd">            </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">            scores : dict of pandas.Series or pandas.Series</span>
+<span class="sd">                Position on index and WPS as values</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># If index is None</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">index</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s2">&quot;LabeledIntervalArray is empty.&quot;</span><span class="p">)</span>
+        
+        <span class="c1"># Calculate WPS without label</span>
+        <span class="n">scores</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">wps</span><span class="p">(</span><span class="n">protection</span><span class="p">,</span> <span class="n">min_length</span><span class="p">,</span> <span class="n">max_length</span><span class="p">)</span>
+            
+        <span class="k">return</span> <span class="n">scores</span></div>
+
+
+<div class="viewcode-block" id="IntervalFrame.exact_match"><a class="viewcode-back" href="../../../api/intervalframe.IntervalFrame.exact_match.html#intervalframe.IntervalFrame.exact_match">[docs]</a>    <span class="k">def</span> <span class="nf">exact_match</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">iframe</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Find exact matches between LabeledIntervalArrays</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">            iframe : LabeledIntervalArray</span>
+<span class="sd">                Intervals to match</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">            matched_iframe : LabeledIntervalArray</span>
+<span class="sd">                Matched intervals</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># If index is None</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">index</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s2">&quot;LabeledIntervalArray is empty.&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Determine matches</span>
+        <span class="n">filtered_intervals</span><span class="p">,</span> <span class="n">filtered_index</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">filter_exact_match</span><span class="p">(</span><span class="n">iframe</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
+
+        <span class="c1"># Create df</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="o">.</span><span class="n">values</span><span class="p">[</span><span class="n">filtered_index</span><span class="p">,:],</span>
+                            <span class="n">columns</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">values</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="o">.</span><span class="n">dtypes</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(),</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">([],</span> <span class="n">index</span><span class="o">=</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">filtered_intervals</span><span class="p">)))</span>
+
+        <span class="c1"># Create IntervalFrame</span>
+        <span class="n">filtered_iframe</span> <span class="o">=</span> <span class="n">IntervalFrame</span><span class="p">(</span><span class="n">filtered_intervals</span><span class="p">,</span> <span class="n">df</span><span class="p">,</span> <span class="n">copy_intervals</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">copy_df</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">filtered_iframe</span></div>
+        
+    
+<div class="viewcode-block" id="IntervalFrame.copy"><a class="viewcode-back" href="../../../api/intervalframe.IntervalFrame.copy.html#intervalframe.IntervalFrame.copy">[docs]</a>    <span class="k">def</span> <span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Copy IntervalFrame</span>
+<span class="sd">        </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">            None</span>
+<span class="sd">        </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">            copy_iframe : IntervalFrame</span>
+<span class="sd">                Copied intervals</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># If index is None</span>
+        <span class="c1">#if self.index is None:</span>
+            <span class="c1">#raise AttributeError(&quot;LabeledIntervalArray is empty.&quot;)</span>
+        
+        <span class="c1"># Make copy of IntervalFrame</span>
+        <span class="n">copy_iframe</span> <span class="o">=</span> <span class="n">IntervalFrame</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">index</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="p">,</span>
+                                    <span class="n">copy_intervals</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                                    <span class="n">copy_df</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        
+        <span class="k">return</span> <span class="n">copy_iframe</span></div></div>
+        
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2021, Kyle S. Smith..</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
