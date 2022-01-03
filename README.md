@@ -23,7 +23,6 @@ Dependencies can be installed by:
 
 PyPI install, presuming you have all its requirements installed:
 ```
-    NOT AVAILABLE...YET
 	pip install intervalframe
 ```
 
