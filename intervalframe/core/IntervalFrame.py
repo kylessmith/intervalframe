@@ -46,13 +46,15 @@ class IntervalFrame(object):
         """
 
         # Determine if intervals need to be copied
-        if copy_intervals:
+        if copy_intervals and intervals is not None:
             intervals = intervals.copy()
         
         # Initialize Index
         if isinstance(intervals, IntervalArray) or isinstance(intervals, LabeledIntervalArray):
             self.index = intervals
         elif intervals is None and df is None:
+            self.index = None
+        elif intervals is None and df.shape == (0,0):
             self.index = None
         else:
             raise TypeError("Unrecognized input for intervals.")
@@ -85,6 +87,13 @@ class IntervalFrame(object):
                 
         # Set df
         self.df = df
+        
+        # Check shape
+        if self.index is None:
+            if self.df.shape[0] != 0:
+                raise TypeError("DataFrame and Intervals don't match.")
+        elif self.index.size != self.df.shape[0]:
+            raise TypeError("DataFrame and Intervals don't match.")
 
         # Make sure index is frozen
         if self.index is not None:
@@ -250,7 +259,7 @@ class IntervalFrame(object):
         if concat_iframe.index is not None:
             concat_iframe.index.unfreeze()
         for iframe in iframe_iter:
-            concat_iframe.df = pd.concat([concat_iframe.df, iframe.df], ignore_index=True, join="inner")
+            concat_iframe.df = pd.concat([concat_iframe.df, iframe.df], ignore_index=True, join="outer")
             if concat_iframe.index is None:
                 concat_iframe.index = iframe.index.copy()
             else:
@@ -598,8 +607,11 @@ class IntervalFrame(object):
             raise TypeError("IntervalFrames must have same type of index.")
 
         # Index iframes
-        results_iframe = self.iloc[ref_index,:]
-        results_iframe.df["overlap"] = query_index
+        if ref_index.shape[0] > 0: 
+            results_iframe = self.iloc[ref_index,:]
+            results_iframe.df["overlap"] = query_index
+        else:
+            results_iframe = IntervalFrame()
 
         #Create intervals
         #results_intervals = self.index[ref_index]

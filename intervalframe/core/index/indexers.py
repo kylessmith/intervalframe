@@ -131,6 +131,7 @@ class Locator(object):
                     intervals = self.iobject.index[args]
                 else:
                     intervals = self.iobject.index[args[0]]
+                    index = np.arange(self.iobject.shape[0])[args[0]]
             else:
                 if isinstance(self.iobject, IntervalSeries.IntervalSeries):
                     intervals, index = self.iobject.index.get_with_index(args)
@@ -146,8 +147,10 @@ class Locator(object):
                     data = self.iobject.df.iloc[args[0],:].loc[:,args[1]].copy()
                 else:
                     data = self.iobject.df.iloc[index,:].loc[:,args[1]].copy()
+            elif isinstance(args, tuple) and np.issubdtype(type(args[1]), np.integer):
+                data = self.iobject.df.iloc[index,:].iloc[:,args[1]].copy()
             else:
-                data= self.iobject.df.iloc[index,:].iloc[:,args[1]].copy()
+                data = self.iobject.df.iloc[index,:].loc[:,args[1]].copy()
         else:
             if isinstance(args, slice):
                 data = self.iobject.series.iloc[args].copy()
