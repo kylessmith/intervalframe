@@ -4,9 +4,10 @@ import numpy as np
 import copy as cp
 from .index.indexers import iLocator, Locator
 from tabulate import tabulate
-from bcpseg import bcpseg
-import cbseg
+import linear_segment
 from collections import Counter
+from typing import Any, Dict, List, Optional, Hashable, Sequence
+from pandas.api.types import is_sparse
 
 
 #_mpl_repr
@@ -17,8 +18,14 @@ class IntervalFrame(object):
     :class:`~intervalframe.IntervalFrame` stores a intervals
     """
 
-    def __init__(self, intervals=None, df=None, labels=None, columns=None, dtypes=None,
-                 copy_df=False, copy_intervals=False):
+    def __init__(self, 
+                 intervals: Optional[LabeledIntervalArray] = None,
+                 df: Optional[pd.DataFrame] = None,
+                 labels: Optional[np.ndarray] = None,
+                 columns: Optional[np.ndarray] = None,
+                 dtypes: Optional[Dict] = None,
+                 copy_df: bool = False,
+                 copy_intervals: bool = False):
         """
         Initialize IntervalFrame
 
@@ -142,6 +149,9 @@ class IntervalFrame(object):
             # Create tabulate table
             repr_string = tabulate(repr_list, headers="firstrow")
 
+            # Add shape
+            repr_string += "\n\n[" + str(self.shape[0]) + " rows x " + str(self.shape[1]) + " columns]\n"
+
         return repr_string
 
     
@@ -201,16 +211,118 @@ class IntervalFrame(object):
         # Add intervals
         if labels is None:
             index = IntervalArray()
-            index.from_array(starts, ends)
+            index.add(starts, ends)
         else:
             index = LabeledIntervalArray()
-            index.from_array(starts, ends, labels)
+            index.add(starts, ends, labels)
             
         # Create IntervalFrame
         iframe = IntervalFrame(index)
         
         return iframe
-                
+    
+
+    @staticmethod
+    def from_dict_range(dict_range, bin_size=10000):
+        """
+        """
+
+        # Add intervals
+        index = LabeledIntervalArray.create_bin(dict_range, bin_size)
+
+        # Create IntervalFrame
+        iframe = IntervalFrame(index)
+
+        return iframe
+
+
+    @staticmethod
+    def read_h5(h5_group):
+        """
+        Read IntervalFrame to h5py group
+
+        Parameters
+        ----------
+            h5_group : h5py.Group
+                Section of h5 file to read from
+
+        Returns
+        -------
+            iframe : IntervalFrame
+                IntervalFrame from h5 file
+
+        """
+
+        from ..read.read_h5 import read_h5_intervalframe
+        
+        # Write
+        if len(h5_group) > 0:
+            iframe = read_h5_intervalframe(h5_group)
+        else:
+            iframe = IntervalFrame()
+
+        return iframe
+
+    
+    @staticmethod
+    def read_bed(filename: str,
+                 header: int = None,
+                 skipfirst: bool = False,
+                 is_url: bool = False):
+        """
+         Read BED file into IntervalFrame
+
+        Parameters
+        ----------
+            filename : str
+                Bed to read from
+            header : int
+                Which line to use as header
+            skipfirst : bool
+                Skip first line
+            is_url : bool
+                Whether file is url
+
+        Returns
+        -------
+            iframe : IntervalFrame
+                IntervalFrame from h5 file
+        """
+
+        from ..read.read_text import read_bed
+
+        # Read bed
+        iframe = read_bed(filename,
+                          header=header,
+                          skipfirst=skipfirst,
+                          is_url=is_url)
+
+        return iframe
+
+    
+    @staticmethod
+    def read_parquet(filename: str):
+        """
+         Read parquet file into IntervalFrame
+
+        Parameters
+        ----------
+            filename : str
+                Parquet to read from
+
+        Returns
+        -------
+            iframe : IntervalFrame
+                IntervalFrame from parquet file
+        """
+
+        from ..read.read_parquet import read_parquet
+
+        # Read bed
+        iframe = read_parquet(filename)
+
+        return iframe
+
                 
     def starts(self):
         """
@@ -221,7 +333,7 @@ class IntervalFrame(object):
             return None
         
         # Extract starts in intervals
-        starts = self.index.extract_starts()
+        starts = self.index.starts
         
         return starts
         
@@ -235,7 +347,7 @@ class IntervalFrame(object):
             return None
         
         # Extract ends in intervals
-        ends = self.index.extract_ends()
+        ends = self.index.ends
         
         return ends
 
@@ -299,14 +411,20 @@ class IntervalFrame(object):
 
         # Intersect
         if label is None:
-            overlaps, overlap_index = self.index.intersect_with_index(start, end)
+            overlaps, overlap_index = self.index.intersect(start, end,
+                                                            return_intervals=True,
+                                                            return_index=True)
         else:
-            overlaps, overlap_index = self.index.intersect_with_index(start, end, label=str(label))
+            overlaps, overlap_index = self.index.intersect(start, end,
+                                                           label=str(label),
+                                                           return_intervals=True,
+                                                           return_index=True)
             
         # Create df
         if self.df.shape[1] > 0:
             df = pd.DataFrame(self.df.values[overlap_index,:],
-                            columns=self.df.columns.values).astype(self.df.dtypes.to_dict(), copy=False)
+                            columns=self.df.columns.values).astype(self.df.dtypes.to_dict(),
+                            copy=False)
         else:
             df = pd.DataFrame([], index=range(len(overlaps)))
 
@@ -361,15 +479,18 @@ class IntervalFrame(object):
         pass
 
 
-    def nhits(self, start, end, label=None):
+    def nhits(self,
+              start: int | np.ndarray,
+              end: int | np.ndarray,
+              label=None):
         """
         Find number of intersecting intervals
 
         Paramters
         ---------
-            start : int
+            start : int | np.ndarray
                 Starting position
-            end : int
+            end : int | np.ndarray
                 Ending position
 
         Returns
@@ -389,31 +510,6 @@ class IntervalFrame(object):
             nhits = self.index.nhits(start, end, label)
 
         return nhits
-
-
-    def nhits_from_array(self, starts, ends):
-        """
-        Find number of intersecting intervals
-
-        Paramters
-        ---------
-            start : numpy.ndarray
-                Starting position
-            end : numpoy.ndarray
-                Ending position
-
-        Returns
-        -------
-            n : numpy.ndarray
-                Number of overlapping intervals
-            
-        """
-
-        # If index is None
-        if self.index is None:
-            raise AttributeError("LabeledIntervalArray is empty.")
-
-        pass
 
 
     def coverage(self):
@@ -438,7 +534,10 @@ class IntervalFrame(object):
         pass
 
 
-    def bin_coverage(self, bin_size=100000, min_length=None, max_length=None):
+    def bin_coverage(self,
+                     bin_size: int = 100000,
+                     min_length: int = None,
+                     max_length: int = None):
         """
         Find sum of coverage within binned
         positions
@@ -480,7 +579,10 @@ class IntervalFrame(object):
         pass
 
 
-    def bin_nhits(self, bin_size=100000, min_length=None, max_length=None):
+    def bin_nhits(self,
+                  bin_size: int = 100000,
+                  min_length: int = None,
+                  max_length: int = None):
         """
         Find number of intervals overlapping binned
         positions
@@ -514,9 +616,27 @@ class IntervalFrame(object):
                                      copy_df=False)
 
         return nhits_iframe
-    
 
-    def annotate(self, iframe, column, method="mean"):
+
+    def iter_intersect(self,
+                       iframe: IntervalFrame):
+        """
+        """
+
+        for index in iframe.index.iter_intersect(self.index, return_intervals=False, return_index=True):
+            if len(index) > 0:
+                new_iframe = iframe.iloc[index,:]
+            else:
+                new_iframe = IntervalFrame(columns=[iframe.columns])
+            
+            yield new_iframe
+
+    
+    def annotate(self,
+                 iframe: IntervalFrame,
+                 column: str,
+                 method: str = "mean",
+                 column_name: str = None):
         """
         Annotate values in one IntervalFrame with another
 
@@ -528,6 +648,8 @@ class IntervalFrame(object):
                 Name of the column to use
             method : str
                 How to annotate ('mean','std','median','label')
+            column_name : str
+                Name of the new column [defualt: method]
         
         Returns
         -------
@@ -539,13 +661,9 @@ class IntervalFrame(object):
         if self.index is None:
             raise AttributeError("LabeledIntervalArray is empty.")
 
-        # Find overlaps
-        if isinstance(iframe.index, LabeledIntervalArray) and isinstance(self.index, LabeledIntervalArray):
-            query_index, ref_index = self.index.intersect_from_LabeledIntervalArray(iframe.index)
-        elif isinstance(iframe.index, IntervalArray) and isinstance(self.index, IntervalArray):
-            query_index, ref_index = self.index.intersect_from_IntervalArray(iframe.index)
-        else:
-            raise TypeError("IntervalFrames must have same type of index.")
+        # Check column_name
+        if column_name is None:
+            column_name = method
 
         # Set function
         if method == "mean":
@@ -556,27 +674,37 @@ class IntervalFrame(object):
             func = np.std
         elif method == "var":
             func = np.var
-
-        # Calculate value
-        if method != "label":
-            values = np.zeros(self.df.shape[0])
-            # Iterate over overlaps
-            for i in pd.unique(ref_index):
-                values[i] = func(iframe.df.loc[query_index[ref_index == i],
-                                               column].values)
-
+        elif method == "sum":
+            func = np.sum
         elif method == "label":
-            values = np.repeat("", dtype="S10")
-            # Iterate over overlaps
-            for i in pd.unique(ref_index):
-                values[i] = Counter(iframe.df.loc[query_index[ref_index == i],
-                                                  column].values).most_common(1)[0][0]
+            func = lambda a : Counter(a).most_common(1)[0][0]
+
+        if method == "label":
+            values = np.zeros(self.df.shape[0]).astype(object)
+        else:
+            values = np.zeros(self.df.shape[0])
+        # Check if sparse
+        sparse_present = False
+        if is_sparse(iframe.df.loc[:,column].values):
+            sparse_present = True
+            df_values = iframe.df.loc[:,column].to_dense().values
+        for i, index in enumerate(iframe.index.iter_intersect(self.index, return_intervals=False, return_index=True)):
+            if len(index) > 0:
+                if sparse_present:
+                    value = func(df_values[index])
+                else:
+                    value = iframe.df.loc[:,column].values[index]
+                    values[i] = func(value)
+            else:
+                values[i] = np.nan
 
         # Append column to df
-        self.df[method] = values
+        self.df[column_name] = values
 
 
-    def overlap(self, iframe, key="overlap"):
+    def overlap(self,
+                iframe: IntervalFrame,
+                key: str = "overlap"):
         """
         Find overlaps in one IntervalFrame with another
 
@@ -600,38 +728,29 @@ class IntervalFrame(object):
 
         # Find overlaps
         if isinstance(iframe.index, LabeledIntervalArray) and isinstance(self.index, LabeledIntervalArray):
-            query_index, ref_index = self.index.intersect_from_LabeledIntervalArray(iframe.index)
+            query_index, ref_index = self.index.intersect_from_LabeledIntervalArray(iframe.index,
+                                                                                    return_intervals=False,
+                                                                                    return_index=True)
+ 
         elif isinstance(iframe.index, IntervalArray) and isinstance(self.index, IntervalArray):
-            query_index, ref_index = self.index.intersect_from_IntervalArray(iframe.index)
+            query_index, ref_index = self.index.intersect_from_IntervalArray(iframe.index,
+                                                                            return_intervals=False,
+                                                                            return_index=True)
         else:
             raise TypeError("IntervalFrames must have same type of index.")
 
         # Index iframes
-        if ref_index.shape[0] > 0: 
+        if ref_index.shape[0] > 0:
             results_iframe = self.iloc[ref_index,:]
             results_iframe.df["overlap"] = query_index
         else:
             results_iframe = IntervalFrame()
 
-        #Create intervals
-        #results_intervals = self.index[ref_index]
-
-        # Create df
-        #if self.df.shape[1] > 0:
-            #df = pd.DataFrame(self.df.values[ref_index,:],
-                              #columns=self.df.columns.values).astype(self.df.dtypes.to_dict(), copy=False)
-            #df = self.df.iloc[ref_index,:].reset_index(drop=True, inplace=True)
-        #else:
-            #df = pd.DataFrame([], index=range(len(results_intervals)))
-
-        # Create IntervalFrame
-        #results_iframe = IntervalFrame(results_intervals, df, copy_intervals=False, copy_df=False)
-        #results_iframe.df["overlap"] = query_index
-
         return results_iframe
 
 
-    def merge(self, gap=0):
+    def merge(self,
+              gap: int = 0):
         """
         Annotate values in one IntervalFrame with another
 
@@ -660,7 +779,13 @@ class IntervalFrame(object):
         return merged_iframe
 
     
-    def segment(self, column, method="bcp_online", cutoff=0.5, hazard=100, shuffles=5000, p=0.00005):
+    def segment(self,
+                column: str,
+                method: str = "bcp_online",
+                cutoff: float = 0.5,
+                hazard: int = 100,
+                shuffles: int = 5000,
+                p: float = 0.00005):
         """
         Annotate values in one IntervalFrame with another
 
@@ -670,6 +795,16 @@ class IntervalFrame(object):
                 Intervals used to annotate
             column : str
                 Name of the column to use
+            method : str
+                How to annotate ('bcp_online','bcp_online_both','cbs')
+            cutoff : float
+                Cutoff for bcpseg
+            hazard : int
+                Hazard for bcpseg
+            shuffles : int
+                Number of shuffles for cbs
+            p : float
+                P-value for cbs
         
         Returns
         -------
@@ -683,32 +818,24 @@ class IntervalFrame(object):
             raise AttributeError("LabeledIntervalArray is empty.")
 
         # Segment intervals for IntervalArray
-        if method == "bcp_online":
-            if isinstance(self.index, IntervalArray):
-                segment_intervals = bcpseg(self.df[column].values, cutoff=cutoff, method="online", hazard=hazard)
-            else:
-                segment_intervals = bcpseg(self.df[column].values, labels=self.index.extract_labels(), cutoff=cutoff, method="online", hazard=hazard)
-        elif method == "bcp_online_both":
-            if isinstance(self.index, IntervalArray):
-                segment_intervals = bcpseg(self.df[column].values, cutoff=cutoff, method="online_both", hazard=hazard)
-            else:
-                segment_intervals = bcpseg(self.df[column].values, labels=self.index.extract_labels(), cutoff=cutoff, method="online_both", hazard=hazard)
-        elif method == "bcp_offline":
-            if isinstance(self.index, IntervalArray):
-                segment_intervals = bcpseg(self.df[column].values, cutoff=cutoff, method="offline", hazard=hazard)
-            else:
-                segment_intervals = bcpseg(self.df[column].values, labels=self.index.extract_labels(), cutoff=cutoff, method="offline", hazard=hazard)
-        elif method == "cbs":
-            if isinstance(self.index, IntervalArray):
-                segment_intervals = cbseg.segment(self.df[column].values, shuffles=shuffles, p=p)
-            else:
-                segment_intervals = cbseg.segment(self.df[column].values, labels=self.index.extract_labels(), shuffles=shuffles, p=p)
-            segment_intervals = cbseg.validate(self.df[column].values, segment_intervals, shuffles=shuffles, p=p)
+        if isinstance(self.index, IntervalArray):
+            segment_intervals = linear_segment.segment(self.df[column].values,
+                                                        labels = None,
+                                                        cutoff = cutoff,
+                                                        method = method,
+                                                        hazard = hazard,
+                                                        shuffles = shuffles,
+                                                        p = p)
         else:
-            raise NameError("method input not recognized.")
+            segment_intervals = linear_segment.segment(self.df[column].values,
+                                                        labels = self.index.labels,
+                                                        cutoff = cutoff,
+                                                        method = method,
+                                                        hazard = hazard,
+                                                        shuffles = shuffles,
+                                                        p = p)
 
-        #Re-index segments
-        #print(segment_intervals)
+        # Re-index segments
         segment_intervals.index_with_aiarray(self.index)
 
         # Create IntervalFrame
@@ -717,7 +844,8 @@ class IntervalFrame(object):
         return segment_iframe
         
         
-    def downsample(self, proportion):
+    def downsample(self,
+                   proportion: float):
         """
         Randomly downsample intervals
 
@@ -737,12 +865,15 @@ class IntervalFrame(object):
             raise AttributeError("LabeledIntervalArray is empty.")
         
         # Downsample
-        filtered_intervals, filtered_index = self.index.downsample_with_index(proportion)
+        filtered_intervals, filtered_index = self.index.downsample(proportion,
+                                                                   return_intervals=True,
+                                                                   return_index=True)
         
         # Create df
         if self.df.shape[1] > 0:
             df = pd.DataFrame(self.df.values[filtered_index,:],
-                            columns=self.df.columns.values).astype(self.df.dtypes.to_dict(), copy=False)
+                              columns=self.df.columns.values).astype(self.df.dtypes.to_dict(),
+                              copy=False)
         else:
             df = pd.DataFrame([], index=range(len(filtered_intervals)))
 
@@ -776,7 +907,10 @@ class IntervalFrame(object):
         return length_distribution
         
         
-    def wps(self, protection=60, min_length=None, max_length=None):
+    def wps(self,
+            protection: int = 60,
+            min_length: int = None,
+            max_length: int = None):
         """
         Calculate Window Protection Score for each position in AIList range
         
@@ -788,8 +922,6 @@ class IntervalFrame(object):
                 Minimum length of intervals to include [default = None]
             max_length : int
                 Maximum length of intervals to include [default = None]
-            label : str
-                Label for hierarchical indexing
             
         Returns
         -------
@@ -808,7 +940,8 @@ class IntervalFrame(object):
         return scores
 
 
-    def exact_match(self, iframe):
+    def exact_match(self,
+                    iframe: IntervalFrame):
         """
         Find exact matches between LabeledIntervalArrays
 
@@ -842,6 +975,227 @@ class IntervalFrame(object):
         filtered_iframe = IntervalFrame(filtered_intervals, df, copy_intervals=False, copy_df=False)
 
         return filtered_iframe
+
+
+    def combine(self,
+                iframe_list: List,
+                combine_method: str = "union",
+                sparse_optimize: bool = False,
+                fill_value: Any = np.nan):
+        """
+        Combine two IntervalFrames
+
+        Parameters
+        ----------
+            iframe_list : List[IntervalFrame]
+                IntervalFrame to combine with
+            combine_method : str
+                Method to combine intervals (default = "union")
+            sparse_optimize : bool
+                Optimize for sparse IntervalFrames (default = False)
+
+        Returns
+        -------
+            combined_iframe : IntervalFrame
+                Combined IntervalFrame
+
+        See Also
+        --------
+            IntervalFrame.union
+            IntervalFrame.intersect
+            IntervalFrame.subtract
+
+        Examples
+        --------
+        >>>from ailist import LabeledIntervalArray
+        >>>from intervalframe import IntervalFrame
+        >>>ail = LabeledIntervalArray()
+        >>>ail.add(0, 10, "a")
+        >>>ail.add(20, 30, "a")
+        >>>ail.add(40, 50, "b")
+        >>>ail.add(60, 70, "b")
+        >>>ail2 = LabeledIntervalArray()
+        >>>ail2.add(0, 10, "a")
+        >>>ail2.add(20, 30, "b")
+        >>>ail2.add(20, 30, "a")
+        >>>is_match1, is_match2 = ail.is_exact_match(ail2)
+        >>>iframe1 = IntervalFrame(intervals=ail)
+        >>>iframe1.df.loc[:,"test"] = [1,2,3,4]
+        >>>iframe2 = IntervalFrame(intervals=ail2)
+        >>>iframe2.df.loc[:,"test"] = [8,9,10]
+        >>>iframe2.df.loc[:,"test2"] = ['z','b','d']
+        >>>iframe3 = iframe1.combine([iframe2])
+        >>>iframe3
+        interval              test  test2
+        ------------------  ------  -------
+        Interval(0-10, a)        1  nan
+        Interval(20-30, a)       2  nan
+        Interval(40-50, b)       3  nan
+        Interval(60-70, b)       4  nan
+        Interval(20-30, b)       9  b
+
+        [5 rows x 2 columns]
+        """
+
+        # If index is None
+        if self.index is None:
+            raise AttributeError("LabeledIntervalArray is empty.")
+
+        # Combine
+        if combine_method == "union":
+            for i, iframe in enumerate(iframe_list):
+                if i == 0:
+                    has_match1, has_match2 = self.index.is_exact_match(iframe.index)
+                    intervals = self.index[has_match1]
+                    intervals.append(self.index[~has_match1])
+                    intervals.append(iframe.index[~has_match2])
+
+                    # Format DataFrames
+                    #common_columns = self.df.columns.intersection(iframe.columns).values
+                    #other_columns1 = self.df.columns.difference(iframe.columns).values
+                    other_columns2 = iframe.df.columns.difference(self.columns).values
+                    ind1, ind2 = self.index.which_exact_match(iframe.index)
+                    common_df = self.df.iloc[ind1,:].copy()
+                    for col in other_columns2:
+                        common_df[col] = np.nan
+                    common_df[other_columns2] = iframe.df.loc[:,other_columns2].values[ind2,:]
+                    # Construct new df
+                    df = pd.concat([common_df, self.df.loc[~has_match1,:], iframe.df.loc[~has_match2]], axis=0)
+                else:
+                    has_match1, has_match2 = intervals.is_exact_match(iframe.index)
+                    intervals.append(iframe.index[~has_match2])
+
+                    # Format DataFrames
+                    #common_columns = df.columns.intersection(iframe.columns).values
+                    #other_columns1 = df.columns.difference(iframe.columns).values
+                    other_columns2 = iframe.df.columns.difference(df.columns).values
+                    ind1, ind2 = intervals.which_exact_match(iframe.index)
+                    common_df = df.iloc[ind1,:].copy()
+                    for col in other_columns2:
+                        common_df[col] = np.nan
+                    common_df[other_columns2] = iframe.df.loc[:,other_columns2].values[ind2,:]
+                    # Construct new df
+                    df = pd.concat([common_df, df.loc[~has_match1,:], iframe.df.loc[~has_match2]], axis=0)
+
+                if sparse_optimize:
+                    for col in df.columns.values:
+                        if np.sum(df.loc[:,col].values == fill_value) > 0.5 * df.shape[0]:
+                            self.df[col] = pd.arrays.SparseArry(self.df.loc[:,col].values, fill_value=fill_value)
+        else:
+            raise NameError("combine_method not recognized.")
+
+        # Create IntervalFrame
+        combined_iframe = IntervalFrame(intervals=intervals,
+                                        df=df)
+
+        return combined_iframe
+
+
+    def sparse_optimize(self,
+                        fill_value: Any = np.nan):
+        """
+        Optimize for sparse IntervalFrames
+        
+        Parameters
+        ----------
+            None : None
+                None
+
+        Returns
+        -------
+            None : None
+                None
+
+        See Also
+        --------
+            IntervalFrame.annotate
+            IntervalFrame.combine
+
+        Examples
+        --------
+        >>>from ailist import LabeledIntervalArray
+        """
+
+        # If index is None
+        if self.index is None:
+            raise AttributeError("LabeledIntervalArray is empty.")
+
+        # Optimize
+        for col in self.columns:
+            if np.sum(self.df.loc[:,col].values == fill_value) > 0.5 * self.df.shape[0]:
+                self.df[col] = pd.arrays.SparseArry(self.df.loc[:,col].values, fill_value=fill_value)
+
+        return None
+
+
+    def to_h5(self, 
+              h5_group,
+              compression_opts = 4):
+        """
+        Write IntervalFrame to h5py group
+
+        Parameters
+        ----------
+            h5_group : h5py.Group
+                Section of h5 file to write to
+            compression_opt : int
+                Gzip level of compression (default = 4)
+
+        Returns
+        -------
+            None : None
+                None
+
+        """
+
+        from ..write.write_h5 import write_h5_intervalframe
+        
+        # Write
+        write_h5_intervalframe(self, h5_group, compression_opts=compression_opts)
+
+
+    def to_parquet(self,
+                   filename,
+                   **kwargs):
+        """
+        Write IntervalFrame to parquet file
+
+        Parameters
+        ----------
+            filename : str
+                Name of parquet file
+            kwargs : dict
+                Keyword arguments for pyarrow.parquet.write_table
+
+        Returns
+        -------
+            None : None
+                None
+
+        """
+
+        from ..write.write_parquet import write_parquet
+        
+        # Write
+        write_parquet(self, filename, **kwargs)
+
+
+    def drop_columns(self,
+                     columns: Hashable | Sequence[Hashable] | pd.Index):
+        """
+        Drop columns from IntervalFrame
+
+        Parameters
+        ----------
+            columns : Hashable | Sequence[Hashable] | pd.Index
+                Column(s) to drop
+
+        Returns
+        -------
+            None : None
+        """
+
+        self.df = self.df.drop(columns, axis=1)
         
     
     def copy(self):
@@ -858,10 +1212,6 @@ class IntervalFrame(object):
                 Copied intervals
         
         """
-
-        # If index is None
-        #if self.index is None:
-            #raise AttributeError("LabeledIntervalArray is empty.")
         
         # Make copy of IntervalFrame
         copy_iframe = IntervalFrame(self.index, self.df,

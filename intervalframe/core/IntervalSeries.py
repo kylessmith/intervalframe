@@ -212,9 +212,9 @@ class IntervalSeries(object):
 
         # Intersect
         if label is None:
-            overlaps, overlap_index = self.index.intersect_with_index(start, end)
+            overlaps, overlap_index = self.index.intersect(start, end, return_intervals=True, return_index=True)
         else:
-            overlaps, overlap_index = self.index.intersect_with_index(start, end, label=str(label))
+            overlaps, overlap_index = self.index.intersect(start, end, label=str(label), return_intervals=True, return_index=True)
             
         # Create df
         if len(self.series) > 0:
@@ -415,9 +415,9 @@ class IntervalSeries(object):
 
         # Find overlaps
         if isinstance(iframe.index, LabeledIntervalArray) and isinstance(self.index, LabeledIntervalArray):
-            query_index, ref_index = self.index.intersect_from_LabeledIntervalArray(iframe.index)
+            query_index, ref_index = self.index.intersect_from_LabeledIntervalArray(iframe.index, return_intervals=False, return_index=True)
         elif isinstance(iframe.index, IntervalArray) and isinstance(self.index, IntervalArray):
-            query_index, ref_index = self.index.intersect_from_IntervalArray(iframe.index)
+            query_index, ref_index = self.index.intersect_from_IntervalArray(iframe.index, return_intervals=False, return_index=True)
         else:
             raise TypeError("IntervalFrames must have same type of index.")
 
@@ -513,12 +513,10 @@ class IntervalSeries(object):
                 segment_intervals = cbseg.segment(self.series.values, shuffles=shuffles, p=p)
             else:
                 segment_intervals = cbseg.segment(self.series.values, labels=self.index.extract_labels(), shuffles=shuffles, p=p)
-            segment_intervals = cbseg.validate(self.series.values, segment_intervals, shuffles=shuffles, p=p)
         else:
             raise NameError("method input not recognized.")
 
         #Re-index segments
-        print(segment_intervals)
         segment_intervals.index_with_aiarray(self.index)
 
         # Create IntervalSeries
@@ -543,7 +541,7 @@ class IntervalSeries(object):
         """
         
         # Downsample
-        filtered_intervals, filtered_index = self.index.downsample_with_index(proportion)
+        filtered_intervals, filtered_index = self.index.downsample(proportion, return_intervals=True, return_index=True)
         
         # Create series
         series = pd.Series([], index=range(len(filtered_intervals)))

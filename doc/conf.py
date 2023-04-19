@@ -14,8 +14,8 @@ import os
 import sys
 from pathlib import Path
 from datetime import datetime
-HERE = Path(__file__).parent
-sys.path[:0] = [str(HERE.parent), str(HERE / 'extensions')]
+#HERE = Path(__file__).parent
+#sys.path[:0] = [str(HERE.parent), str(HERE / 'extensions')]
 import intervalframe
 #sys.path.append(os.path.abspath('../intervalframe'))
 #sys.path.insert(0, os.path.abspath('.'))

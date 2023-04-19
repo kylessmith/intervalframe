@@ -2,6 +2,10 @@ import numpy as np
 import pandas as pd
 from ailist import IntervalArray, LabeledIntervalArray
 from ailist import Interval, LabeledInterval
+from typing import List
+from pandas.api.types import is_integer
+
+# Local imports
 from .. import IntervalFrame
 from .. import IntervalSeries
 
@@ -13,7 +17,8 @@ class iLocator(object):
     :class:`~intervalframe.iLocator` indexes intervals
     """
     
-    def __init__(self, iobject):
+    def __init__(self, 
+                 iobject):
         """
         Initialize iLocator
 
@@ -47,31 +52,33 @@ class iLocator(object):
         # Create DataFrame or Series
         if isinstance(self.iobject, IntervalFrame.IntervalFrame):
             if self.iobject.df.shape[1] > 0:
-                if np.issubdtype(type(args[0]), np.integer):
+                if is_integer(args[0]):
                     data = self.iobject.df.iloc[[args[0]], args[1]]
-                elif np.issubdtype(type(args[1]), np.integer):
+                elif is_integer(args[1]):
                     data = self.iobject.df.iloc[args[0], args[1]]
                 else:
                     data = pd.DataFrame(self.iobject.df.values[args],
-                                    columns=self.iobject.df.columns.values).astype(self.iobject.df.dtypes.to_dict(), copy=False)
+                                        columns=self.iobject.df.columns.values).astype(self.iobject.df.dtypes.to_dict(),
+                                        copy=False)
             else:
                 data = pd.DataFrame([], index=range(len(index)))
         else:
             if self.iobject.series.shape[0] > 0:
                 data = pd.Series(self.iobject.series.values[args],
-                                    name=self.iobject.series.name).astype(self.iobject.series.dtype.to_dict(), copy=False)
+                                    name=self.iobject.series.name).astype(self.iobject.series.dtype.to_dict(),
+                                    copy=False)
             else:
                 data = pd.Series([], index=range(len(index)))
                           
         # Create IntervalFrame of IntervalSeries
         if isinstance(data, pd.Series):
             if isinstance(index, Interval) or isinstance(index, LabeledInterval):
-                iobject = IntervalSeries.IntervalSeries(index.to_list(), data, copy_series=False, copy_intervals=False)
+                iobject = IntervalSeries.IntervalSeries(index.to_array(), data, copy_series=False, copy_intervals=False)
             else:
                 iobject = IntervalSeries.IntervalSeries(index, data, copy_series=False, copy_intervals=False)
         else:
             if isinstance(index, Interval) or isinstance(index, LabeledInterval):
-                iobject = IntervalFrame.IntervalFrame(index.to_list(), data, copy_df=False, copy_intervals=False)
+                iobject = IntervalFrame.IntervalFrame(index.to_array(), data, copy_df=False, copy_intervals=False)
             else:
                 iobject = IntervalFrame.IntervalFrame(index, data, copy_df=False, copy_intervals=False)
         
@@ -134,9 +141,9 @@ class Locator(object):
                     index = np.arange(self.iobject.shape[0])[args[0]]
             else:
                 if isinstance(self.iobject, IntervalSeries.IntervalSeries):
-                    intervals, index = self.iobject.index.get_with_index(args)
+                    intervals, index = self.iobject.index.get(args, return_intervals=True, return_index=True)
                 else:
-                    intervals, index = self.iobject.index.get_with_index(args[0])
+                    intervals, index = self.iobject.index.get(args[0], return_intervals=True, return_index=True)
         else:
             raise IndexError("No labels in index.")
         
@@ -147,7 +154,7 @@ class Locator(object):
                     data = self.iobject.df.iloc[args[0],:].loc[:,args[1]].copy()
                 else:
                     data = self.iobject.df.iloc[index,:].loc[:,args[1]].copy()
-            elif isinstance(args, tuple) and np.issubdtype(type(args[1]), np.integer):
+            elif isinstance(args, tuple) and is_integer(args[1]):
                 data = self.iobject.df.iloc[index,:].iloc[:,args[1]].copy()
             else:
                 data = self.iobject.df.iloc[index,:].loc[:,args[1]].copy()
@@ -177,12 +184,12 @@ class Locator(object):
                 if isinstance(index[0], slice):
                     self.iobject.df.loc[index] = value
                 elif isinstance(self.iobject.index, LabeledIntervalArray):
-                    indices = self.iobject.index.get_index(index[0])
+                    indices = self.iobject.index.get(index[0], return_intervals=False, return_index=True)
                     self.iobject.df.loc[:,index[1]].values[indices] = value
         
         else:
             if isinstance(index, slice):
                 self.iobject.series.loc[index] = value
             elif isinstance(self.iobject.index, LabeledIntervalArray):
-                indices = self.iobject.index.get_index(index)
+                indices = self.iobject.index.get(index, return_intervals=False, return_index=True)
                 self.iobject.series.loc[index].values[indices] = value
