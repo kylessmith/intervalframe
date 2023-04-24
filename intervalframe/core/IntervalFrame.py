@@ -619,7 +619,7 @@ class IntervalFrame(object):
 
 
     def iter_intersect(self,
-                       iframe: IntervalFrame):
+                       iframe):
         """
         """
 
@@ -633,7 +633,7 @@ class IntervalFrame(object):
 
     
     def annotate(self,
-                 iframe: IntervalFrame,
+                 iframe,
                  column: str,
                  method: str = "mean",
                  column_name: str = None):
@@ -703,7 +703,7 @@ class IntervalFrame(object):
 
 
     def overlap(self,
-                iframe: IntervalFrame,
+                iframe,
                 key: str = "overlap"):
         """
         Find overlaps in one IntervalFrame with another
@@ -781,7 +781,7 @@ class IntervalFrame(object):
     
     def segment(self,
                 column: str,
-                method: str = "bcp_online",
+                method: str = "online_both",
                 cutoff: float = 0.5,
                 hazard: int = 100,
                 shuffles: int = 5000,
@@ -941,7 +941,7 @@ class IntervalFrame(object):
 
 
     def exact_match(self,
-                    iframe: IntervalFrame):
+                    iframe):
         """
         Find exact matches between LabeledIntervalArrays
 
