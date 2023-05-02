@@ -5,7 +5,9 @@ Benchmarking
 
 	import numpy as np
 	import pandas as pd
+	# version: 1.0.0
 	from intervalframe import IntervalFrame
+	# version: 0.0.120
 	import pyranges as pr
 	from collections import Counter
 
@@ -37,23 +39,24 @@ Benchmarking
 	####################
 
 	%time iframe1 = IntervalFrame.from_array(starts1, ends1, labels=labels1)
-	# CPU times: user 37.7 ms, sys: 1.16 ms, total: 38.8 ms
-	# Wall time: 39.3 ms
+	# CPU times: user 34.4 ms, sys: 1.26 ms, total: 35.6 ms
+	# Wall time: 37.9 ms
 	%time iframe1.df.loc[:,"values"] = values1
-	# CPU times: user 1.34 ms, sys: 355 µs, total: 1.69 ms
-	# Wall time: 1.33 ms
+	# CPU times: user 1.42 ms, sys: 1.01 ms, total: 2.42 ms
+	# Wall time: 3.25 ms
 
 	%time iframe2 = IntervalFrame.from_array(starts2, ends2, labels=labels2)
-	# CPU times: user 43.1 ms, sys: 1.08 ms, total: 44.2 ms
-	# Wall time: 44.1 ms
+	# CPU times: user 36.6 ms, sys: 1.35 ms, total: 37.9 ms
+	# Wall time: 37.9 ms
 	%time iframe2.df.loc[:,"values"] = values2
-	# CPU times: user 1.38 ms, sys: 680 µs, total: 2.06 ms
-	# Wall time: 1.45 ms
+	# CPU times: user 1.29 ms, sys: 1.2 ms, total: 2.49 ms
+	# Wall time: 1.51 ms
 
 	%timeit iframe1.intersect(64182, 164184, label="a")
-	# 3.18 ms ± 183 µs per loop (mean ± std. dev. of 7 runs, 100 loops each)
-	%timeit o = iframe1.overlap(iframe2)
-	# 1min 54s ± 6.25 s per loop (mean ± std. dev. of 7 runs, 1 loop each)
+	# 1.8 ms ± 7.58 µs per loop (mean ± std. dev. of 7 runs, 1,000 loops each)
+	%time o = iframe1.overlap(iframe2)
+	# CPU times: user 32 s, sys: 15.1 s, total: 47.1 s
+	# Wall time: 54.9 s
 
 
 	#####################
@@ -61,15 +64,15 @@ Benchmarking
 	#####################
 
 	%time gr1 = pr.from_dict({"Chromosome": labels1, "Start": starts1, "End": ends1, "ID": ids1, "values":values1})
-	# CPU times: user 38.5 ms, sys: 3.57 ms, total: 42.1 ms
-	# Wall time: 41.1 ms
+	# CPU times: user 26 ms, sys: 6.48 ms, total: 32.5 ms
+	# Wall time: 37.6 ms
 	%time gr2 = pr.from_dict({"Chromosome": labels2, "Start": starts2, "End": ends2, "ID": ids2, "values":values2})
-	# CPU times: user 39.4 ms, sys: 3.65 ms, total: 43.1 ms
-	# Wall time: 42 ms
+	# CPU times: user 25.4 ms, sys: 4.84 ms, total: 30.2 ms
+	# Wall time: 29.2 ms
 
 	%time gro = gr1.intersect(gr2)
-	# CPU times: user 57.8 s, sys: 55.9 s, total: 1min 53s
-	# Wall time: 2min 10s
+	# CPU times: user 33.6 s, sys: 27.1 s, total: 1min
+	# Wall time: 1min 8s
 
 
 	#####################
@@ -77,11 +80,11 @@ Benchmarking
 	#####################
 
 	%time pd_mi1 = pd.MultiIndex.from_arrays([labels1, pd.IntervalIndex.from_arrays(starts1, ends1)], names=["label", "interval"])
-	# CPU times: user 1.16 s, sys: 15.3 ms, total: 1.17 s
-	# Wall time: 1.18 s
+	# CPU times: user 513 ms, sys: 10.9 ms, total: 524 ms
+	# Wall time: 527 ms
 	%time pd_i1 = pd.DataFrame(values1, index=pd_mi1)
-	# CPU times: user 193 µs, sys: 0 ns, total: 193 µs
-	# Wall time: 196 µs
+	# CPU times: user 193 µs, sys: 7 µs, total: 200 µs
+	# Wall time: 204 µs
 
 	%timeit pd_i1.loc["a"].loc[pd_i1.loc["a"].index.overlaps(pd.Interval(64182, 164184)),:]
-	# 7.4 ms ± 405 µs per loop (mean ± std. dev. of 7 runs, 100 loops each)
+	# 5.11 ms ± 74.6 µs per loop (mean ± std. dev. of 7 runs, 100 loops each)
