@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "intervalframe"
-version = "1.1.3"
+version = "1.1.4"
 description = "Python package for interval manipulation"
 authors = ["Kyle S. Smith <kyle.smith@stjude.org>"]
 maintainers = ["Kyle S. Smith <kyle.smith@stjude.org>"]
