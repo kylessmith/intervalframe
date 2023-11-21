@@ -146,9 +146,9 @@ def write_h5_intervalframe(iframe, h5_group, compression_opts=4):
     #h5_intervals["starts"] = iframe.starts()
     #h5_intervals["ends"] = iframe.ends()
     if iframe.shape[0] > 0:
-        h5_intervals_starts = h5_intervals.create_dataset("starts", data=iframe.starts(), compression="gzip",
+        h5_intervals_starts = h5_intervals.create_dataset("starts", data=iframe.starts, compression="gzip",
                                                         compression_opts=compression_opts)
-        h5_intervals_end = h5_intervals.create_dataset("ends", data=iframe.ends(), compression="gzip",
+        h5_intervals_end = h5_intervals.create_dataset("ends", data=iframe.ends, compression="gzip",
                                                     compression_opts=compression_opts)
 
         # Is multi

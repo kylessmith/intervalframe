@@ -4,8 +4,7 @@ import numpy as np
 import copy as cp
 from .index import indexers
 from tabulate import tabulate
-from bcpseg import bcpseg
-import cbseg
+import linear_segment
 from collections import Counter
 from . import IntervalFrame
 
@@ -122,6 +121,7 @@ class IntervalSeries(object):
     @property
     def shape(self):
         """
+        Dimensions of IntervalFrame
         """
         
         return self.series.shape
@@ -130,6 +130,7 @@ class IntervalSeries(object):
     @property
     def iloc(self):
         """
+        Positional indexer
         """
 
         return indexers.iLocator(self)
@@ -138,6 +139,7 @@ class IntervalSeries(object):
     @property
     def loc(self):
         """
+        Label indexer
         """
 
         return indexers.Locator(self)
@@ -146,14 +148,31 @@ class IntervalSeries(object):
     @property
     def values(self):
         """
+        Numpy array of values
         """
         
         return self.series.values
 
     
     @staticmethod
-    def from_array(starts, ends, labels=None):
+    def from_array(starts: np.ndarray,
+                   ends: np.ndarray,
+                   labels: np.ndarray = None):
         """
+        Create IntervalSeries from arrays
+
+        Parameters
+        ----------
+            starts : np.ndarray
+                Starts of intervals
+            ends : np.ndarray
+                Ends of intervals
+            labels : np.ndarray
+                Labels of intervals
+
+        Returns
+        -------
+            iseries : IntervalSeries
         """
 
         # Add intervals
@@ -169,9 +188,10 @@ class IntervalSeries(object):
         
         return iseries
                 
-                
+    @property
     def starts(self):
         """
+        Starts of intervals
         """
         
         # Extract starts in intervals
@@ -179,9 +199,10 @@ class IntervalSeries(object):
         
         return starts
         
-    
+    @property
     def ends(self):
         """
+        Ends of intervals
         """
         
         # Extract ends in intervals
@@ -493,28 +514,22 @@ class IntervalSeries(object):
         """
 
         # Segment intervals for IntervalArray
-        if method == "bcp_online":
-            if isinstance(self.index, IntervalArray):
-                segment_intervals = bcpseg(self.series.values, cutoff=cutoff, method="online", hazard=hazard)
-            else:
-                segment_intervals = bcpseg(self.series.values, labels=self.index.extract_labels(), cutoff=cutoff, method="online", hazard=hazard)
-        elif method == "bcp_online_both":
-            if isinstance(self.index, IntervalArray):
-                segment_intervals = bcpseg(self.series.values, cutoff=cutoff, method="online_both", hazard=hazard)
-            else:
-                segment_intervals = bcpseg(self.dseries.values, labels=self.index.extract_labels(), cutoff=cutoff, method="online_both", hazard=hazard)
-        elif method == "bcp_offline":
-            if isinstance(self.index, IntervalArray):
-                segment_intervals = bcpseg(self.series.values, cutoff=cutoff, method="offline", hazard=hazard)
-            else:
-                segment_intervals = bcpseg(self.series.values, labels=self.index.extract_labels(), cutoff=cutoff, method="offline", hazard=hazard)
-        elif method == "cbs":
-            if isinstance(self.index, IntervalArray):
-                segment_intervals = cbseg.segment(self.series.values, shuffles=shuffles, p=p)
-            else:
-                segment_intervals = cbseg.segment(self.series.values, labels=self.index.extract_labels(), shuffles=shuffles, p=p)
+        if isinstance(self.index, IntervalArray):
+            segment_intervals = linear_segment.segment(self.series.values,
+                                                        labels = None,
+                                                        cutoff = cutoff,
+                                                        method = method,
+                                                        hazard = hazard,
+                                                        shuffles = shuffles,
+                                                        p = p)
         else:
-            raise NameError("method input not recognized.")
+            segment_intervals = linear_segment.segment(self.series.values,
+                                                        labels = self.index.labels,
+                                                        cutoff = cutoff,
+                                                        method = method,
+                                                        hazard = hazard,
+                                                        shuffles = shuffles,
+                                                        p = p)
 
         #Re-index segments
         segment_intervals.index_with_aiarray(self.index)

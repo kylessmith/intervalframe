@@ -98,8 +98,8 @@ setup(
                     "Topic :: Software Development :: Libraries :: Python Modules",
                     "Topic :: Scientific/Engineering :: Bio-Informatics"
                   ],
-    setup_requires = ["tabulate","ailist","cbseg","bcpseg","numpy","pandas"],
-    install_requires = ["tabulate","ailist","cbseg","bcpseg","numpy","pandas"],
+    setup_requires = ["tabulate","ailist","linear_segment","numpy","pandas"],
+    install_requires = ["tabulate","ailist","linear_segment","numpy","pandas"],
     provides = ["intervalframe"],
     keywords = ["interval pandas dataframe ailist overlap"],
     packages = find_namespace_packages(include=["intervalframe", "intervalframe.*"]),

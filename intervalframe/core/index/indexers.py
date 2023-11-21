@@ -3,7 +3,7 @@ import pandas as pd
 from ailist import IntervalArray, LabeledIntervalArray
 from ailist import Interval, LabeledInterval
 from typing import List
-from pandas.api.types import is_integer
+from pandas.api.types import is_integer, is_bool_dtype
 
 # Local imports
 from .. import IntervalFrame
@@ -54,7 +54,7 @@ class iLocator(object):
             if self.iobject.df.shape[1] > 0:
                 if is_integer(args[0]):
                     data = self.iobject.df.iloc[[args[0]], args[1]]
-                elif is_integer(args[1]):
+                elif is_integer(args[1]) or is_bool_dtype(args[1]):
                     data = self.iobject.df.iloc[args[0], args[1]]
                 else:
                     data = pd.DataFrame(self.iobject.df.values[args],
@@ -155,6 +155,8 @@ class Locator(object):
                 else:
                     data = self.iobject.df.iloc[index,:].loc[:,args[1]].copy()
             elif isinstance(args, tuple) and is_integer(args[1]):
+                data = self.iobject.df.iloc[index,:].iloc[:,args[1]].copy()
+            elif isinstance(args, tuple) and is_bool_dtype(args[1]):
                 data = self.iobject.df.iloc[index,:].iloc[:,args[1]].copy()
             else:
                 data = self.iobject.df.iloc[index,:].loc[:,args[1]].copy()

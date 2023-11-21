@@ -158,6 +158,7 @@ class IntervalFrame(object):
     @property
     def shape(self):
         """
+        Dimensions of IntervalFrame
         """
         
         return self.df.shape
@@ -166,6 +167,7 @@ class IntervalFrame(object):
     @property
     def iloc(self):
         """
+        Position locator for IntervalFrame
         """
 
         # If index is None
@@ -178,6 +180,7 @@ class IntervalFrame(object):
     @property
     def loc(self):
         """
+        Label locator for IntervalFrame
         """
 
         # If index is None
@@ -190,6 +193,7 @@ class IntervalFrame(object):
     @property
     def values(self):
         """
+        NumPy representation of IntervalFrame
         """
 
         return self.df.values
@@ -198,14 +202,31 @@ class IntervalFrame(object):
     @property
     def columns(self):
         """
+        Columns of IntervalFrame
         """
 
         return self.df.columns
 
     
     @staticmethod
-    def from_array(starts, ends, labels=None):
+    def from_array(starts: np.ndarray,
+                   ends: np.ndarray,
+                   labels: np.ndarray = None):
         """
+        Create IntervalFrame from array
+
+        Parameters
+        ----------
+            starts : np.ndarray
+                Starts of intervals
+            ends : np.ndarray
+                Ends of intervals
+            labels : np.ndarray
+                Labels for hierarchical indexing
+
+        Returns
+        -------
+            iframe : IntervalFrame
         """
 
         # Add intervals
@@ -223,8 +244,21 @@ class IntervalFrame(object):
     
 
     @staticmethod
-    def from_dict_range(dict_range, bin_size=10000):
+    def from_dict_range(dict_range: Dict[str,int],
+                        bin_size: int = 10000):
         """
+        Construct IntervalFrame from dictionary of ranges
+
+        Parameters
+        ----------
+            dict_range : Dict[str,int]
+                Dictionary of ranges
+            bin_size : int
+                Size of bins
+
+        Returns
+        -------
+            iframe : IntervalFrame
         """
 
         # Add intervals
@@ -323,9 +357,11 @@ class IntervalFrame(object):
 
         return iframe
 
-                
+    
+    @property
     def starts(self):
         """
+        Starts of intervals
         """
 
         # If index is None
@@ -338,8 +374,10 @@ class IntervalFrame(object):
         return starts
         
     
+    @property
     def ends(self):
         """
+        Ends of intervals
         """
 
         # If index is None
@@ -422,9 +460,10 @@ class IntervalFrame(object):
             
         # Create df
         if self.df.shape[1] > 0:
-            df = pd.DataFrame(self.df.values[overlap_index,:],
-                            columns=self.df.columns.values).astype(self.df.dtypes.to_dict(),
-                            copy=False)
+            #df = pd.DataFrame(self.df.values[overlap_index,:],
+            #                columns=self.df.columns.values).astype(self.df.dtypes.to_dict(),
+            #                copy=False)
+            df = self.df.iloc[overlap_index,:].copy()
         else:
             df = pd.DataFrame([], index=range(len(overlaps)))
 
@@ -621,8 +660,20 @@ class IntervalFrame(object):
     def iter_intersect(self,
                        iframe):
         """
+        Iterate over intersections
+
+        Parameters
+        ----------
+            iframe : IntervalFrame
+                Intervals to intersect with
+        
+        Returns
+        -------
+            intersected_iframe : Generator[IntervalFrame]
+                Generator of intervals that intersect
         """
 
+        # Iterate over intersecting intervals
         for index in iframe.index.iter_intersect(self.index, return_intervals=False, return_index=True):
             if len(index) > 0:
                 new_iframe = iframe.iloc[index,:]

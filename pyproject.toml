@@ -1,0 +1,58 @@
+[tool.poetry]
+name = "intervalframe"
+version = "1.1.3"
+description = "Python package for interval manipulation"
+authors = ["Kyle S. Smith <kyle.smith@stjude.org>"]
+maintainers = ["Kyle S. Smith <kyle.smith@stjude.org>"]
+repository = "https://github.com/kylessmith/intervalframe"
+documentation = "https://www.biosciencestack.com/static/intervalframe/docs/index.html"
+keywords = ["cython", "interval", "ailist", "frame"]
+readme = 'README.md'
+license = "GPL-2.0-or-later"
+classifiers = [ "Development Status :: 4 - Beta",
+                    "Environment :: Console",
+                    "Intended Audience :: Developers",
+                    "Intended Audience :: Science/Research",
+                    "Operating System :: POSIX :: Linux",
+                    "Programming Language :: Cython",
+                    "Programming Language :: Python",
+                    "Programming Language :: Python :: 3",
+                    "Programming Language :: Python :: 3.6",
+                    "Topic :: Scientific/Engineering",
+                    "Topic :: Scientific/Engineering :: Mathematics",
+                    "Topic :: Software Development :: Libraries",
+                    "Topic :: Software Development :: Libraries :: Python Modules",
+                    "Topic :: Scientific/Engineering :: Bio-Informatics"
+                  ]
+packages = [{ include = "intervalframe" }]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+numpy = "^1.23.5"
+cython = "^0.29.32"
+pandas = "^1.5.2"
+ailist = "^2.1.0"
+tabulate = "^0.9.0"
+linear_segment = "^1.0.0"
+h5py = "^3.8.0"
+scipy = "^1.9.1"
+requests = "^2.28.2"
+pyarrow = "^11.0.0"
+
+[tool.poetry.dev-dependencies]
+pytest = "^5.2"
+
+[build-system]
+requires = ["poetry-core>=1.0.0",
+            "cython>=0.29.32",
+            "numpy>=1.23.5",
+            "pandas>=1.5.2",
+            "setuptools>=65.5.0",
+            "ailist>=2.1.0",
+            ]
+build-backend = "poetry.core.masonry.api"
+
+[tool.cibuildwheel]
+skip = "cp36-* cp37-* cp38-* cp39-* pp37-* pp38-* *-manylinux_i686 *_ppc64le *_s390x *-musllinux*"
+build-verbosity = "3"
+
