@@ -685,7 +685,7 @@ class IntervalFrame(object):
     
     def annotate(self,
                  iframe,
-                 column: str,
+                 column: str = None,
                  method: str = "mean",
                  column_name: str = None):
         """
@@ -698,7 +698,7 @@ class IntervalFrame(object):
             columns : str
                 Name of the column to use
             method : str
-                How to annotate ('mean','std','median','label')
+                How to annotate ('mean','std','median','label', 'n')
             column_name : str
                 Name of the new column [defualt: method]
         
@@ -715,6 +715,10 @@ class IntervalFrame(object):
         # Check column_name
         if column_name is None:
             column_name = method
+
+        # Check column
+        if method != "n" and column is None:
+            raise ValueError("Column must be given for method other than 'n'.")
 
         # Set function
         if method == "mean":
@@ -736,16 +740,22 @@ class IntervalFrame(object):
             values = np.zeros(self.df.shape[0])
         # Check if sparse
         sparse_present = False
-        if is_sparse(iframe.df.loc[:,column].values):
+        if method != "n" and is_sparse(iframe.df.loc[:,column].values):
             sparse_present = True
             df_values = iframe.df.loc[:,column].to_dense().values
         for i, index in enumerate(iframe.index.iter_intersect(self.index, return_intervals=False, return_index=True)):
             if len(index) > 0:
                 if sparse_present:
-                    value = func(df_values[index])
+                    if method == "n":
+                        value = len(index)
+                    else:
+                        value = func(df_values[index])
                 else:
-                    value = iframe.df.loc[:,column].values[index]
-                    values[i] = func(value)
+                    if method == "n":
+                        values[i] = len(index)
+                    else:
+                        value = iframe.df.loc[:,column].values[index]
+                        values[i] = func(value)
             else:
                 values[i] = np.nan
 
