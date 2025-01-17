@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "intervalframe"
-version = "1.1.6"
+version = "1.1.7"
 description = "Python package for interval manipulation"
 authors = ["Kyle S. Smith <kyle.smith@stjude.org>"]
 maintainers = ["Kyle S. Smith <kyle.smith@stjude.org>"]
@@ -37,7 +37,7 @@ linear_segment = "^1.1.2"
 h5py = "^3.8.0"
 scipy = "^1.9.1"
 requests = "^2.28.2"
-pyarrow = "^12.0.0"
+pyarrow = ">=14.0.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"

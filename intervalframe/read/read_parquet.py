@@ -3,9 +3,11 @@ import numpy as np
 import pyarrow.parquet as pq
 from intervalframe import IntervalFrame
 from ailist import LabeledIntervalArray
+from typing import List
 
 
-def read_parquet(filename: str):
+def read_parquet(filename: str,
+                 index_col: List[str] = ["_starts","_ends","_labels"]) -> IntervalFrame:
     """
     Read parquet file
     
@@ -13,6 +15,8 @@ def read_parquet(filename: str):
     ----------
         filename : str
             Path to parquet file
+        index_col : List[str]
+            Columns that define the index
     
     Returns
     -------
@@ -24,12 +28,12 @@ def read_parquet(filename: str):
     
     # Get index
     index = LabeledIntervalArray()
-    index.add(df.loc[:,"_starts"].values,
-              df.loc[:,"_ends"].values,
-              df.loc[:,"_labels"].values)
+    index.add(df.loc[:,index_col[0]].values,
+            df.loc[:,index_col[1]].values,
+            df.loc[:,index_col[2]].values)
     
     # Drop columns
-    df.drop(columns=["_labels", "_starts", "_ends"], inplace=True)
+    df.drop(columns=index_col, inplace=True)
     
     # Create IntervalFrame
     iframe = IntervalFrame(df=df, intervals=index)
