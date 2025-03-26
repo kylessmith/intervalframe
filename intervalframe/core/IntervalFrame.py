@@ -1038,8 +1038,8 @@ class IntervalFrame(object):
         return filtered_iframe
 
 
-    def combine(self,
-                iframe_list: List,
+    @staticmethod
+    def combine(iframe_list: List,
                 combine_method: str = "union",
                 sparse_optimize: bool = False,
                 fill_value: Any = np.nan):
@@ -1098,50 +1098,27 @@ class IntervalFrame(object):
         [5 rows x 2 columns]
         """
 
-        # If index is None
-        if self.index is None:
-            raise AttributeError("LabeledIntervalArray is empty.")
-
         # Combine
         if combine_method == "union":
-            for i, iframe in enumerate(iframe_list):
-                if i == 0:
-                    has_match1, has_match2 = self.index.is_exact_match(iframe.index)
-                    intervals = self.index[has_match1]
-                    intervals.append(self.index[~has_match1])
-                    intervals.append(iframe.index[~has_match2])
+            intervals = iframe_list[0].index.copy()
+            columns = iframe_list[0].df.columns.values
+            for iframe in iframe_list[1:]:
+                present = iframe.index.has_exact_match(intervals)
+                intervals.append(iframe.index[~present])
+                columns = np.append(columns, iframe.df.columns.values)
+            
+            intervals.sort()
+            df = pd.DataFrame(np.nan, index=range(intervals.size), columns=columns)
+            i = 0
+            for iframe in iframe_list:
+                index1, index2 = intervals.which_exact_match(iframe.index)
+                df.iloc[index1,i:i+iframe.shape[1]] = iframe.df.iloc[index2,:]
+                i += iframe.shape[1]
 
-                    # Format DataFrames
-                    #common_columns = self.df.columns.intersection(iframe.columns).values
-                    #other_columns1 = self.df.columns.difference(iframe.columns).values
-                    other_columns2 = iframe.df.columns.difference(self.columns).values
-                    ind1, ind2 = self.index.which_exact_match(iframe.index)
-                    common_df = self.df.iloc[ind1,:].copy()
-                    for col in other_columns2:
-                        common_df[col] = np.nan
-                    common_df[other_columns2] = iframe.df.loc[:,other_columns2].values[ind2,:]
-                    # Construct new df
-                    df = pd.concat([common_df, self.df.loc[~has_match1,:], iframe.df.loc[~has_match2]], axis=0)
-                else:
-                    has_match1, has_match2 = intervals.is_exact_match(iframe.index)
-                    intervals.append(iframe.index[~has_match2])
-
-                    # Format DataFrames
-                    #common_columns = df.columns.intersection(iframe.columns).values
-                    #other_columns1 = df.columns.difference(iframe.columns).values
-                    other_columns2 = iframe.df.columns.difference(df.columns).values
-                    ind1, ind2 = intervals.which_exact_match(iframe.index)
-                    common_df = df.iloc[ind1,:].copy()
-                    for col in other_columns2:
-                        common_df[col] = np.nan
-                    common_df[other_columns2] = iframe.df.loc[:,other_columns2].values[ind2,:]
-                    # Construct new df
-                    df = pd.concat([common_df, df.loc[~has_match1,:], iframe.df.loc[~has_match2]], axis=0)
-
-                if sparse_optimize:
-                    for col in df.columns.values:
-                        if np.sum(df.loc[:,col].values == fill_value) > 0.5 * df.shape[0]:
-                            self.df[col] = pd.arrays.SparseArry(self.df.loc[:,col].values, fill_value=fill_value)
+            if sparse_optimize:
+                for col in df.columns.values:
+                    if np.sum(df.loc[:,col].values == fill_value) > 0.5 * df.shape[0]:
+                        self.df[col] = pd.arrays.SparseArry(self.df.loc[:,col].values, fill_value=fill_value)
         else:
             raise NameError("combine_method not recognized.")
 
@@ -1183,8 +1160,12 @@ class IntervalFrame(object):
 
         # Optimize
         for col in self.columns:
-            if np.sum(self.df.loc[:,col].values == fill_value) > 0.5 * self.df.shape[0]:
-                self.df[col] = pd.arrays.SparseArry(self.df.loc[:,col].values, fill_value=fill_value)
+            if np.isnan(fill_value):
+                if (np.sum(np.isnan(self.df.loc[:,col].values)) / self.df.shape[0]) > 0.5:
+                    self.df[col] = pd.arrays.SparseArray(self.df.loc[:,col].values, fill_value=fill_value)
+            else:
+                if (np.sum(self.df.loc[:,col].values == fill_value) / self.df.shape[0]) > 0.5:
+                    self.df[col] = pd.arrays.SparseArray(self.df.loc[:,col].values, fill_value=fill_value)
 
         return None
 
