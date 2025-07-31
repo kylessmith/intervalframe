@@ -335,7 +335,9 @@ class IntervalFrame(object):
 
     
     @staticmethod
-    def read_parquet(filename: str):
+    def read_parquet(filename: str,
+                     index_col: List[str] = ["_starts","_ends","_labels"],
+                     columns: List[str] | np.ndarray = None):
         """
          Read parquet file into IntervalFrame
 
@@ -343,6 +345,10 @@ class IntervalFrame(object):
         ----------
             filename : str
                 Parquet to read from
+            index_col : List[str]
+                Columns that define the index
+            columns : List[str] | np.ndarray
+                Columns to read from parquet file
 
         Returns
         -------
@@ -353,7 +359,7 @@ class IntervalFrame(object):
         from ..read.read_parquet import read_parquet
 
         # Read bed
-        iframe = read_parquet(filename)
+        iframe = read_parquet(filename, index_col=index_col, columns=columns)
 
         return iframe
 

@@ -7,7 +7,8 @@ from typing import List
 
 
 def read_parquet(filename: str,
-                 index_col: List[str] = ["_starts","_ends","_labels"]) -> IntervalFrame:
+                 index_col: List[str] = ["_starts","_ends","_labels"],
+                 columns: List[str] | np.ndarray = None) -> IntervalFrame:
     """
     Read parquet file
     
@@ -24,8 +25,17 @@ def read_parquet(filename: str,
     """
         
     # Read parquet
-    df = pd.read_parquet(filename)
-    
+    if columns is not None:
+        columns = np.append(columns, index_col)
+        table = pq.read_table(filename, columns=list(columns))
+        df = table.to_pandas()
+    else:
+        # Read all columns
+        # Use pyarrow to read the file
+        table = pq.read_table(filename)
+        # Convert to pandas DataFrame
+        df = table.to_pandas()
+        
     # Get index
     index = LabeledIntervalArray()
     index.add(df.loc[:,index_col[0]].values,
