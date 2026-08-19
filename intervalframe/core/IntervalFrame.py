@@ -693,7 +693,8 @@ class IntervalFrame(object):
                  iframe,
                  column: str = None,
                  method: str = "mean",
-                 column_name: str = None):
+                 column_name: str = None,
+                 weights: str = None):
         """
         Annotate values in one IntervalFrame with another
 
@@ -737,6 +738,15 @@ class IntervalFrame(object):
             func = np.var
         elif method == "sum":
             func = np.sum
+        elif method == "weighted_mean":
+            if weights is None:
+                func = lambda a : np.average(a, weights=np.arange(1, len(a)+1))
+            else:
+                func = np.average
+        elif method == "min":
+            func = np.min
+        elif method == "max":
+            func = np.max
         elif method == "label":
             func = lambda a : Counter(a).most_common(1)[0][0]
 
@@ -760,6 +770,8 @@ class IntervalFrame(object):
                     if method == "n":
                         values[i] = len(index)
                     else:
+                        if weights is not None and method == "weighted_mean":
+                            value = func(iframe.df.loc[:,column].values[index], weights=iframe.df.loc[:,weights].values[index])
                         value = iframe.df.loc[:,column].values[index]
                         values[i] = func(value)
             else:

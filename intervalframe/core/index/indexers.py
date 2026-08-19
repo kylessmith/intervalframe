@@ -180,18 +180,59 @@ class Locator(object):
         Set index
         """
 
+        def _is_scalar_column_key(column_indexer):
+            return isinstance(column_indexer, (str, int, np.integer))
+
+        def _normalize_value_for_1d(new_value):
+            if isinstance(new_value, pd.DataFrame) and new_value.shape[1] == 1:
+                return new_value.iloc[:, 0]
+
+            if isinstance(new_value, np.ndarray) and new_value.ndim == 2 and new_value.shape[1] == 1:
+                return new_value.reshape(-1)
+
+            return new_value
+
+        def _normalize_value_for_target(target, new_value):
+            """
+            Flatten single-column 2D values when assigning into a 1D target.
+            """
+
+            if getattr(target, "ndim", None) != 1:
+                return new_value
+
+            if isinstance(new_value, pd.DataFrame) and new_value.shape[1] == 1:
+                return new_value.iloc[:, 0]
+
+            if isinstance(new_value, np.ndarray) and new_value.ndim == 2 and new_value.shape[1] == 1:
+                return new_value.reshape(-1)
+
+            return new_value
+
         # Check if index has keys
         if isinstance(self.iobject, IntervalFrame.IntervalFrame):
             if isinstance(index, tuple) and len(index) == 2:
+                column_indexer = index[1]
                 if isinstance(index[0], slice):
-                    self.iobject.df.loc[index] = value
+                    if _is_scalar_column_key(column_indexer) and column_indexer not in self.iobject.df.columns:
+                        value = _normalize_value_for_1d(value)
+                    else:
+                        target = self.iobject.df.loc[index[0], column_indexer]
+                        value = _normalize_value_for_target(target, value)
+                    self.iobject.df.loc[index[0], column_indexer] = value
                 elif isinstance(self.iobject.index, LabeledIntervalArray):
                     indices = self.iobject.index.get(index[0], return_intervals=False, return_index=True)
-                    self.iobject.df.loc[:,index[1]].values[indices] = value
+                    row_labels = self.iobject.df.index.take(indices)
+                    if _is_scalar_column_key(column_indexer) and column_indexer not in self.iobject.df.columns:
+                        value = _normalize_value_for_1d(value)
+                    else:
+                        target = self.iobject.df.loc[row_labels, column_indexer]
+                        value = _normalize_value_for_target(target, value)
+                    self.iobject.df.loc[row_labels, column_indexer] = value
         
         else:
             if isinstance(index, slice):
                 self.iobject.series.loc[index] = value
             elif isinstance(self.iobject.index, LabeledIntervalArray):
                 indices = self.iobject.index.get(index, return_intervals=False, return_index=True)
-                self.iobject.series.loc[index].values[indices] = value
+                row_labels = self.iobject.series.index.take(indices)
+                self.iobject.series.loc[row_labels] = value
